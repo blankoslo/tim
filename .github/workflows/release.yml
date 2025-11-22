@@ -1,4 +1,4 @@
-name: Build & Publish & Bump Homebrew
+name: Publish Release
 
 on:
   push:
