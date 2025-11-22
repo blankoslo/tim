@@ -5,6 +5,7 @@ PROJECT_PATH="./app/Tim.csproj"
 OUT_DIR="./out"
 VERSION="${1:-0.1.0}"
 RUNTIMES=(linux-x64 osx-arm64 win-x64)
+ACCOUNT_KEY="${2:-NOTSET}"
 
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
@@ -25,6 +26,15 @@ for runtime in "${RUNTIMES[@]}"; do
 		--self-contained true
 	echo "Executables available in $target_dir"
   tar -czf "${OUT_DIR}/tim-${runtimefolder}.tar.gz" -C $target_dir .
+  
+  echo "Uploading tim-${runtimefolder}.tar.gz to Azure..."
+  az storage blob upload \
+    --account-name homebrewfiles \
+    --container-name tim \
+    --name "$VERSION/tim-${runtimefolder}.tar.gz" \
+    --file "${OUT_DIR}/tim-${runtimefolder}.tar.gz" \
+    --account-key $ACCOUNT_KEY \
+    --overwrite
 
 done
 
