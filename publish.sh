@@ -46,5 +46,4 @@ gh release create $VERSION \
   './out/tim-win.tar.gz#tim-win' \
   "./out/BlankDev.Tools.Tim.${VERSION}.nupkg#tim-tool-nuget" \
   --title "$VERSION" \
-  --generate-notes \
-  --draft
+  --generate-notes 
