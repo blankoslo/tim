@@ -20,7 +20,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish script
-        run: ./publish.sh ${{env.Version}}
+        run: ./publish.sh ${{env.VERSION}}
         env:
           VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ github.token }}
