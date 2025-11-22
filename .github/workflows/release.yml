@@ -1,0 +1,26 @@
+name: Build & Publish & Bump Homebrew
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: latest
+
+      - name: Publish script
+        run: ./publish.sh
+        env:
+          VERSION: ${{ env.VERSION }}
