@@ -15,42 +15,106 @@ Commands:
   write          Registrerer nye timer
 ```
 
+![alt text](docs/images/demo-table.png)
+
 
 ## install
 
-### MacOS/Linux
+1. MacOS og Linux
+2. Windows
 
-HomeBrew
+*MacOS/Linux*
+
+
+Alt 1 - _Homebrew_
+
 
 ```bash
 brew tap blankoslo/tools git@github.com:blankoslo/homebrew-tools.git
 brew install blankoslo/tools/tim
 ```
 
-###
-Eller gå til [releases](https://github.com/blankoslo/tim/releases/latest) og last ned siste versjon.
+Alt 2 - Manuelt
 
+Bruk filene fra [releases](https://github.com/blankoslo/tim/releases/latest). Last ned siste versjon og hiv den i en mappe som er i PATH-en din.
+
+
+*Windows*
 <details>
 
-<summary>Windows</summary>
+<summary>Windows-greier her</summary>
 
-Flere muligheter. Dersom man bruker WSL, så kan man bruke Homebrew. Ellers:
+Flere muligheter. Dersom man bruker WSL, så kan man bruke Homebrew. Se over.
 
-1) .NET tool fra en nuget feed:
+Ellers har man 3 muligheter
+
+1 - .NET tool
+
+ (krever .NET SDK 10):
+
 ```bash
-$ dotnet tool install --global tim \
+$ dotnet tool install --global BlankDev.Tools.Tim \
  --source "https://nuget.pkg.github.com/blankoslo/index.json"
+ --api-key "GITHUB_CLASSIC_TOKEN_MED:read:packages"
 ```
 
 ```bash
-$ dotnet tool install --global tim \
- --source "/folder/med/nedlasted/tim.0.1.0.nupkg"
+$ dotnet tool install --global BlankDev.Tools.Tim \
+ --source "/folder/med/nedlasted/BlankDev.Tools.Tim.0.1.0.nupkg" \
+ --source "https://nuget.pkg.github.com/blankoslo/index.json" \
+ --api-key "GITHUB_CLASSIC_TOKEN_MED:read:packages"
 ```
+2 - Manuelt
 
-2) Last ned exe fra [releases](https://github.com/blankoslo/tim/releases/latest) og legge til i PATH.
+Last ned exe fra [releases](https://github.com/blankoslo/tim/releases/latest) og legge til i PATH.
 
+
+3 - `dnx`
+(Krever .NET 10+)
+
+Uten installasjon. 
+
+```bash
+dnx BlankDev.Tools.Tim
+```
+NB, krever en `nuget.config` m/ source "https://nuget.pkg.github.com/blankoslo/index.json" og et API key med read:packages rettighet.
 
 </details>
 
 
 ### usage
+
+🔥🔥🔥 Støtter foreløpig bare 1 stk fire-in-the-hole timeføring som sørger for at alle dager får samme antall timer på et angitt prosjekt.
+
+```
+$ tim write --help
+Usage: write [arguments...] [options...] [-h|--help] [--version]
+
+Registrerer nye timer
+
+Arguments:
+  [0] <string?>    Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt
+
+Options:
+  -w, --range <Range>       Hvilken uke som skal timeføres. Gyldige: "Week|PrevWeek" (Default: Week)
+  -h, --hours <decimal?>    Antall timer som skal føres (Default: 7.5)
+```
+
+
+### Eksempler
+
+Fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke
+```
+tim write -p ANEO1006 
+```
+
+Fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke, ved bruk av default-prosjektet
+```
+// fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke
+$ tim set-default ANEO1006
+$ tim write 
+```
+
+Fører 3.5 timer istedet for defaulten 7,5
+```
+$ tim write -h 3,5
