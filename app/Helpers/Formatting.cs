@@ -15,4 +15,15 @@ public class Formatting
     {
         return $"[dim]{proj.Id}[/] {proj.Project} ";
     }
+
+    public static string FormatOther(Employee emp)
+    {
+        var color = emp.ActivelyEmployeed() ? "white" : "grey dim";
+        return $"[{color}]{emp.First_Name} {emp.Last_Name}[/] [[id:{emp.Id}]]";
+    }
+
+    public static string FormatEmpOnProj(RpcEmployeesOnProjectsResponse emp)
+    {
+        return $"[white] {emp.Customer_Name} {emp.First_Name} {emp.Last_Name}[/] [[id:{emp.Id}]]";
+    }
 }

@@ -12,7 +12,7 @@ internal partial class Time
     [ConsoleAppFilter<AuthenticationFilter>]
     public async Task List(ConsoleAppContext ctx,
         SelectedRange weekRange = SelectedRange.Current,
-        int? emp = null,
+        [Argument] int? emp = null,
         string? customer = null,
         CancellationToken token = default) => await ListWeek(ctx, weekRange, emp, customer, token);
 
@@ -23,9 +23,40 @@ internal partial class Time
         CancellationToken ct = default)
     {
         var session = consoleCtx.GetUserSession();
+        var employeeIds = new List<int>();
+
+        // 1) Read from STDIN if piped
+        if (System.Console.IsInputRedirected)
+        {
+            string? line;
+            while ((line = System.Console.ReadLine()) != null)
+            {
+                if (int.TryParse(line, out var pipedId))
+                {
+                    employeeIds.Add(pipedId);
+                }
+            }
+        }
+
+        // 2) If no piped input, use employeeId argument or fallback to logged-in
+        if (!employeeIds.Any())
+        {
+            if (employeeId != null)
+                employeeIds.Add(employeeId.Value); // argument
+            else
+                employeeIds.Add(session.EmployeeId); // fallback
+        }
 
         FloqClient folqClient = HttpClientFactory.CreateFolqClientForUser(session);
+        foreach (var id in employeeIds)
+        {
+            await ProcessEmployee(range, id, customer, ct, session, folqClient);
+        }
+    }
 
+    private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer, CancellationToken ct,
+        UserSession session, FloqClient folqClient)
+    {
         var dates = GetDates(range);
 
         Table table = new();
