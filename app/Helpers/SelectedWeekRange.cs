@@ -1,5 +1,9 @@
-public enum SelectedWeekRange
+
+[Flags]
+public enum SelectedRange
 {
     Current,
-    Previous
+    Previous,
+    CurrentMonth,
+    PreviousMonth
 }

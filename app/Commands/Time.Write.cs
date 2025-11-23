@@ -8,17 +8,17 @@ internal partial class Time
     public async Task Write(
         ConsoleAppContext ctx,
         [HideDefaultValue, Argument]string? project = null,
-        SelectedWeekRange range = SelectedWeekRange.Current,
+        SelectedRange range = SelectedRange.Current,
         decimal? hours = 7.5m,
         CancellationToken token = default) => await WriteLogEntries(range, project, hours, ctx, token);
 
 
-    internal static async Task WriteLogEntries(SelectedWeekRange? week, string? project, decimal? hours, ConsoleAppContext ctx, CancellationToken cancellationToken = default)
+    internal static async Task WriteLogEntries(SelectedRange week, string? project, decimal? hours, ConsoleAppContext ctx, CancellationToken cancellationToken = default)
     {
         var session = ctx.GetUserSession();
-        await ListWeek(ctx,week, cancellationToken);
+        await ListWeek(ctx,week, ct: cancellationToken);
 
-        var dateInfo = GetWeek(week);
+        var dates = GetDates(week);
 
         var minutesPerDay = 450;
         if (hours.HasValue)
@@ -52,7 +52,7 @@ internal partial class Time
             new ConfirmationPrompt($"Timeføre " +
                                    $"[bold]{hoursFriendlyStr}t[/] på " +
                                    $"[purple]{targetProjectCode}[/] " +
-                                   $"[white][[{dateInfo.Dates.First():dd.MM}-{dateInfo.Dates.Last():dd.MM}]][/]")
+                                   $"[white][[{dates.First():dd.MM}-{dates.Last():dd.MM}]][/]")
                 .ShowDefaultValue(true));
 
         if (!isConfirmed)
@@ -65,10 +65,10 @@ internal partial class Time
         AnsiConsole.MarkupLine($"Timefører " +
                                $"[bold]{hoursFriendlyStr}t[/] på " +
                                $"[purple]{targetProjectCode}[/] " +
-                               $"[white][[{dateInfo.Dates.First():dd.MM}-{dateInfo.Dates.Last():dd.MM}]][/]");
+                               $"[white][[{dates.First():dd.MM}-{dates.Last():dd.MM}]][/]");
 
         var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
-        foreach (var day in dateInfo.Dates)
+        foreach (var day in dates)
         {
             var loggedHoursForDay = await folqClient.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
             var loggedHoursForDayAndProject = loggedHoursForDay.SingleOrDefault(h => h.Id == targetProjectCode);
@@ -110,7 +110,7 @@ internal partial class Time
             }
         }
 
-        await Time.ListWeek(ctx, week, cancellationToken);
+        await Time.ListWeek(ctx, week, ct: cancellationToken);
 
     }
 }

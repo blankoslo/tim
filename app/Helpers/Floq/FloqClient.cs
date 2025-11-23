@@ -23,6 +23,7 @@ public class FloqClient(HttpClient client)
     }
 
     private record RpcProjectsForEmployeeeForDateRequest(int employee_id, string date);
+    private record RpcEmployeesOnProjectsRequest(DateOnly from_date, DateOnly to_date);
 
     // RPC: projects_for_employee_for_date
     // Denne funksjonen returnerer prosjekter fordi noe/noen sørger for at
@@ -38,6 +39,19 @@ public class FloqClient(HttpClient client)
         return [];
     }
 
+    // RPC: employees_on_projects
+    // Pass på helger! Bruk et ukes-spenn for bedre resultat.
+    public async Task<IEnumerable<RpcEmployeesOnProjectsResponse>> GetRpcEmployeesOnProjects(DateOnly fromDate, DateOnly toDate, CancellationToken token)
+    {
+        var reqPayload = new RpcEmployeesOnProjectsRequest(fromDate, toDate);
+        var res = await client.PostAsJsonAsync("/rpc/employees_on_projects", reqPayload, JsonSerializerOptions.Web, token);
+        if (res.IsSuccessStatusCode)
+        {
+            return await res.Content.ReadFromJsonAsync<IEnumerable<RpcEmployeesOnProjectsResponse>>(token) ?? [];
+        }
+        return [];
+    }
+
     public async Task<bool> AddTimeEntry(TimeEntryRequest request, CancellationToken token)
     {
         var res = await client.PostAsJsonAsync("/time_entry", request, JsonSerializerOptions.Web, token);
@@ -45,6 +59,7 @@ public class FloqClient(HttpClient client)
     }
 }
 public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int PercentageStaffed);
+public record RpcEmployeesOnProjectsResponse(string Customer_Id, string Customer_Name, string First_Name, string Last_Name, int Id, string Emoji);
 
 
 public record Employee(int Id,

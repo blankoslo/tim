@@ -7,7 +7,7 @@ class EmployeeCommands
     [Hidden]
     public async Task List(ConsoleAppContext ctx, bool includeInactive = false, CancellationToken token = default)
     {
-        var session = (UserSession) ctx.State!;
+        var session = ctx.GetUserSession();
         var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
         var res = await folqClient.GetEmployees(token);
         var steadies = res
@@ -25,7 +25,7 @@ class EmployeeCommands
     [Hidden]
     public async Task Me(ConsoleAppContext ctx, CancellationToken token)
     {
-        var session = (UserSession)ctx.State!;
+        var session = ctx.GetUserSession();
         var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
         var emp = await folqClient.GetEmployeeByEmail(session.Email, token);
         if (emp != null)

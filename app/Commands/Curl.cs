@@ -1,4 +1,6 @@
-public class CurlCommand
+
+[RegisterCommands]
+internal class CurlCommand
 {
     /// <summary>
     /// curl '/employees?id=eq.1'
@@ -8,9 +10,8 @@ public class CurlCommand
     /// <param name="x">-X, method: f.eks. `GET|POST|PUT`</param>
     /// <param name="h">-H, Headere f.eks. 'Accept: application/json'</param>
     [ConsoleAppFilter<AuthenticationFilter>]
-    [Hidden]
     [Command("curl")]
-    internal async Task<int> Curl(
+    public async Task<int> Curl(
         ConsoleAppContext ctx,
         [Argument] string uri,
         string x = "GET",
@@ -29,8 +30,7 @@ public class CurlCommand
              httpMethod == HttpMethod.Put ||
              httpMethod == HttpMethod.Patch))
         {
-            msg.Content = new StringContent(data);
-            msg.Headers.Add("Content-Type", "application/json");
+            msg.Content = new StringContent(data, System.Text.Encoding.UTF8, "application/json");
         }
 
         if (h is not null)
