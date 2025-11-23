@@ -1,7 +1,7 @@
 internal partial class Time
 {
     /// <summary>Henter default-prosjektet ditt</summary>
-    internal async Task GetDefault(ConsoleAppContext ctx, CancellationToken token = default)
+    public async Task GetDefault(ConsoleAppContext ctx, CancellationToken token = default)
     {
         var defaultProj = await UserSecretsManager.GetDefaultProject(token);
         if (defaultProj != null)
