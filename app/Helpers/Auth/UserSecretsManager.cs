@@ -134,7 +134,7 @@ public class UserSecretsManager
 
         // empFetch not implemented for Google, deprecated
         throw new NotImplementedException("Implement emp fetch here");
-        return new UserSession(name, email, googleToken, 0, expiryUtc);
+        //return new UserSession(name, email, googleToken, empId, expiryUtc);
     }
 
     private static async Task<Dictionary<string, string>?> ReadAsDictionary(CancellationToken token)

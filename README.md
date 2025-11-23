@@ -53,16 +53,20 @@ Ellers har man 3 muligheter
  (krever .NET SDK 10):
 
 ```bash
-$ dotnet tool install --global BlankDev.Tools.Tim \
- --source "https://nuget.pkg.github.com/blankoslo/index.json"
- --api-key "GITHUB_CLASSIC_TOKEN_MED:read:packages"
+$ dotnet tool install --global BlankDev.Tools.Tim "GITHUB_CLASSIC_TOKEN_MED:read:packages"
+```
+
+```bash
+$ dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
+ --username dontcare \ 
+ --password <GH_PAT> \ 
+ --store-password-in-clear-text 
+ --name github \ 
 ```
 
 ```bash
 $ dotnet tool install --global BlankDev.Tools.Tim \
- --source "/folder/med/nedlasted/BlankDev.Tools.Tim.0.1.0.nupkg" \
- --source "https://nuget.pkg.github.com/blankoslo/index.json" \
- --api-key "GITHUB_CLASSIC_TOKEN_MED:read:packages"
+ --source "/folder/med/nedlasted/BlankDev.Tools.Tim.0.1.0.nupkg" \ 
 ```
 2 - Manuelt
 
@@ -96,22 +100,22 @@ Arguments:
   [0] <string?>    Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt
 
 Options:
-  -w, --range <Range>       Hvilken uke som skal timeføres. Gyldige: "Week|PrevWeek" (Default: Week)
+  -w, --range <Range>       Hvilken uke som skal timeføres. Gyldige: "Current|Previous" (Default: Current)
   -h, --hours <decimal?>    Antall timer som skal føres (Default: 7.5)
 ```
 
 
 ### Eksempler
 
-Fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke
+Fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke
 ```
-tim write -p ANEO1006 
+tim write -p ANE1006 
 ```
 
-Fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke, ved bruk av default-prosjektet
+Fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke, ved bruk av default-prosjektet
 ```
-// fører 7.5 timer på prosjekt ANEO1006 for alle dager i inneværende uke
-$ tim set-default ANEO1006
+// fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke
+$ tim set-default ANE1006
 $ tim write 
 ```
 
