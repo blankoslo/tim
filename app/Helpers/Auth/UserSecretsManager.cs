@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Text.Json;
-using Floq;
 using Microsoft.Extensions.Configuration.UserSecrets;
 public class UserSecretsManager
 {
@@ -70,16 +69,18 @@ public class UserSecretsManager
         {
             empName = secrets["Employee:Name"];
         }
-        var session = new UserSession(empName, secrets["Folq:Email"], accessToken, DateTime.Parse(secrets["Folq:ExpiresAt"]));
-        if (secrets.TryGetValue("Employee:Id", out var empId) || string.IsNullOrEmpty(empId))
+        if (!secrets.TryGetValue("Employee:Id", out var empId) || string.IsNullOrEmpty(empId))
         {
-            session.EmployeeId = int.Parse(empId!);
+            throw new Exception("Logg inn på nytt");
         }
+
+        var session = new UserSession(empName, secrets["Folq:Email"], accessToken, int.Parse(empId), DateTime.Parse(secrets["Folq:ExpiresAt"]));
+
 
         return session;
     }
 
-    public static async Task StoreDefaultProject(RpcProjectsForEmployeeeForDateResponse value, CancellationToken token)
+    public static async Task StoreDefaultProject(UserDefaultedProject value, CancellationToken token)
     {
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
         secrets["DefaultProject"] = JsonSerializer.Serialize(value);
@@ -88,7 +89,7 @@ public class UserSecretsManager
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
     }
 
-    public static async Task<RpcProjectsForEmployeeeForDateResponse?> GetDefaultProject(CancellationToken token)
+    public static async Task<UserDefaultedProject?> GetDefaultProject(CancellationToken token)
     {
         var secrets = await ReadAsDictionary(token);
         if (secrets == null || !secrets.TryGetValue("DefaultProject", out var projectJson))
@@ -99,7 +100,7 @@ public class UserSecretsManager
 
         try
         {
-            if (JsonSerializer.Deserialize<RpcProjectsForEmployeeeForDateResponse>(projectJson) is { } project)
+            if (JsonSerializer.Deserialize<UserDefaultedProject>(projectJson) is { } project)
             {
                 return project;
             }
@@ -130,7 +131,10 @@ public class UserSecretsManager
         var dateTimestr = secrets["Google:ExpiresAt"];
         var expiryUtc = DateTime.Parse(dateTimestr);
         var googleToken = secrets["Google:AccessToken"];
-        return new UserSession(name, email, googleToken, expiryUtc);
+
+        // empFetch not implemented for Google, deprecated
+        throw new NotImplementedException("Implement emp fetch here");
+        return new UserSession(name, email, googleToken, 0, expiryUtc);
     }
 
     private static async Task<Dictionary<string, string>?> ReadAsDictionary(CancellationToken token)
@@ -151,7 +155,7 @@ public class UserSecretsManager
         return await File.ReadAllTextAsync(secretsPath, token);
     }
 
-    private static string GetAppDataPath()
+    public static string GetAppDataPath()
     {
         var path= Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -220,8 +224,9 @@ public class UserSecretsManager
     }
 }
 
-public record UserSession(string Name, string Email, string AccessToken, DateTime ExpiresAtUtc)
+public record UserSession(string Name, string Email, string AccessToken, int EmployeeId, DateTime ExpiresAtUtc)
 {
     public bool IsExpired => DateTime.UtcNow >= ExpiresAtUtc;
-    public int? EmployeeId { get; set; }
 }
+
+public record UserDefaultedProject(string Id, string Project, string Customer);

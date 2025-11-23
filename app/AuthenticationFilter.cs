@@ -2,7 +2,6 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
 {
     public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
     {
-        // setup new state to context
         var session = await UserSecretsManager.GetFolqSession(cancellationToken);
         if (session is { IsExpired: false })
         {
@@ -13,6 +12,20 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
         {
             AnsiConsole.MarkupLine("[red]Login required.[/]");
         }
+    }
+}
+
+internal static class ConsoleAppContextExtensions
+{
+    public static UserSession GetUserSession(this ConsoleAppContext ctx)
+    {
+        UserSession? session =  (UserSession?) ctx.State;
+        if (session is null or { IsExpired: true })
+        {
+            throw new Exception("Tried to fetch session, but session was not present or expired.");
+        }
+
+        return session;
     }
 }
 

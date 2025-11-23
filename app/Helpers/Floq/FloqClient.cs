@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Floq;
 public class FloqClient(HttpClient client)
 {
     public async Task<IEnumerable<Employee>> GetEmployees(CancellationToken token)
@@ -25,7 +24,10 @@ public class FloqClient(HttpClient client)
 
     private record RpcProjectsForEmployeeeForDateRequest(int employee_id, string date);
 
-    public async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetLoggedHours(int employeeId, DateOnly date, CancellationToken token)
+    // RPC: projects_for_employee_for_date
+    // Denne funksjonen returnerer prosjekter fordi noe/noen sørger for at
+    // prosjekter finnes for ansatt & dato (med null|0-verdier).
+    public async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetRpcProjectsForEmployeeForDate(int employeeId, DateOnly date, CancellationToken token)
     {
         var reqPayload = new RpcProjectsForEmployeeeForDateRequest(employeeId, date.ToString("yyyy-MM-dd"));
         var res = await client.PostAsJsonAsync("/rpc/projects_for_employee_for_date", reqPayload, JsonSerializerOptions.Web, token);
