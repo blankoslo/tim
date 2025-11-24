@@ -140,12 +140,10 @@ internal partial class Time
             {
                 entriesByDay[kvp.Key] = entries;
             }
-
         }
 
         // Build a dictionary: projectId -> project info
-        List<RpcProjectsForEmployeeeForDateResponse> allEntriesFlattened = allTimeEntriesThisWeek.SelectMany(x => x).ToList();
-        List<Project> projects = allEntriesFlattened
+        List<Project> projects = entriesByDay.SelectMany(kvp => kvp.Value)
             .GroupBy(p => p.Id)
             .Select(g => g.First())
             .OrderBy(p => p.Id)
