@@ -29,21 +29,45 @@ class EmployeeCommands
         }
         else
         {
+            var allEmployees = (await client.GetEmployees(token)).ToList();
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var from = today.AddDays(-20);
             var atClients = await client.GetRpcEmployeesOnProjects(from, today, token);
-            foreach (var empsAtCustomer in atClients.Where(c => c.Customer_Name == customer).GroupBy(e => e.Customer_Id))
+            var empsAtCustomers = atClients
+                .Where(c => c.Customer_Name == customer)
+                .GroupBy(e => e.Customer_Id);
+
+            foreach (var empsAtCustomer in empsAtCustomers)
             {
                 foreach (var emp in empsAtCustomer.ToList())
                 {
-                    if (ids)
+                    if (includeInactive)
                     {
-                        Console.WriteLine(emp.Id);
+                        if (ids)
+                        {
+                            Console.WriteLine(emp.Id);
+                        }
+                        else
+                        {
+                            Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
+                        }
                     }
                     else
                     {
-                        Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
+                        var allDetails = allEmployees.FirstOrDefault(e => e.ActivelyEmployeed() && e.Id == emp.Id);
+                        if(allDetails == null)
+                            continue;
+
+                        if (ids)
+                        {
+                            Console.WriteLine(emp.Id);
+                        }
+                        else
+                        {
+                            Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
+                        }
                     }
+
                 }
             }
         }
