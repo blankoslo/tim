@@ -6,7 +6,7 @@ OUT_DIR="./out"
 VERSION="${1:-0.1.0}"
 RUNTIMES=(linux-x64 osx-arm64 win-x64)
 ACCOUNT_KEY="${2:-'abc'}"
-NUGETPUSHAPIKEY="{$3:-'expecteedasinput'}"
+NUGETPUSHAPIKEY="${3:-'expecteedasinput'}"
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
