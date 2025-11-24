@@ -52,9 +52,7 @@ Ellers har man 3 muligheter
 
  (krever .NET SDK 10):
 
-```bash
-$ dotnet tool install --global BlankDev.Tools.Tim "GITHUB_CLASSIC_TOKEN_MED:read:packages"
-```
+Et _GitHub Classic Token_  kan du opprette [her](https://github.com/settings/tokens). Husk å gi den `read:packages` og litt varighet da
 
 ```bash
 $ dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
@@ -65,12 +63,17 @@ $ dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
 ```
 
 ```bash
+$ dotnet tool install --global BlankDev.Tools.Tim --source "github" 
+```
+
+Evt, dersom du vil håndtere nye versjoner selv:
+```bash
 $ dotnet tool install --global BlankDev.Tools.Tim \
  --source "/folder/med/nedlasted/BlankDev.Tools.Tim.0.1.0.nupkg" \ 
 ```
 2 - Manuelt
 
-Last ned exe fra [releases](https://github.com/blankoslo/tim/releases/latest) og legge til i PATH.
+Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/latest) og legge til i PATH.
 
 
 3 - `dnx`
