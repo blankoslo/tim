@@ -35,8 +35,8 @@ internal partial class Authentications
                 }
 
                 ctx1.Status = "Sjekker ansatt-basen.";
-                var folqClient = HttpClientFactory.CreateFolqClientForUser(data.AccessToken);
-                var emp = await folqClient.GetEmployeeByEmail(data.UserEmail, token);
+                var client = HttpClientFactory.CreateFloqClientForUser(data.AccessToken);
+                var emp = await client.GetEmployeeByEmail(data.UserEmail, token);
                 if (emp == null)
                 {
                     Console.MarkupLine($"[red]Innlogging feilet[/].\n" +

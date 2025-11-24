@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Net;
-
-var app = ConsoleApp.Create();
+﻿var app = ConsoleApp.Create();
 app.Add("", ThisWeekOrLoginRequriredCommand);
 await app.RunAsync(args);
 
@@ -16,7 +13,7 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
         return;
     }
 
-    var session = await UserSecretsManager.GetFolqSession(token);
+    var session = await UserSecretsManager.GetFloqSession(token);
 
     if (session is { IsExpired: true })
     {

@@ -19,9 +19,7 @@ internal class CurlCommand
         string[]? h = null,
         CancellationToken token = default)
     {
-
         var session = ctx.GetUserSession();
-        HttpClientFactory.CreateFolqClientForUser(session);
 
         HttpMethod httpMethod = HttpMethod.Parse(x);
         var msg = new HttpRequestMessage(httpMethod, uri);
@@ -46,8 +44,8 @@ internal class CurlCommand
                 }
             }
         }
-
-        var response = await HttpClientFactory.Client.SendAsync(msg, token);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var response = await client.SendAsync(msg, token);
         if (response.IsSuccessStatusCode)
         {
             var responseBody = await response.Content.ReadAsStringAsync(token);

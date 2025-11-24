@@ -57,6 +57,11 @@ public class FloqClient(HttpClient client)
         var res = await client.PostAsJsonAsync("/time_entry", request, JsonSerializerOptions.Web, token);
         return res.IsSuccessStatusCode;
     }
+
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage msg, CancellationToken token)
+    {
+        return client.SendAsync(msg, token);
+    }
 }
 public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int PercentageStaffed);
 public record RpcEmployeesOnProjectsResponse(string Customer_Id, string Customer_Name, string First_Name, string Last_Name, int Id, string Emoji);

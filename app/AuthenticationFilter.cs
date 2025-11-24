@@ -2,7 +2,7 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
 {
     public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
     {
-        var session = await UserSecretsManager.GetFolqSession(cancellationToken);
+        var session = await UserSecretsManager.GetFloqSession(cancellationToken);
         if (session is { IsExpired: false })
         {
             var authedContext = context with { State = session };

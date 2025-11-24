@@ -5,13 +5,13 @@ internal partial class Time
     public async Task SetDefault(ConsoleAppContext ctx, [Argument, HideDefaultValue] string? project = null,  CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
-        var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
 
         DateOnly oneWeekAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
         if (oneWeekAgo.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
             oneWeekAgo = oneWeekAgo.AddDays(-3);
         var hoursLoggedOnProjectsLastWeek =
-            await folqClient.GetRpcProjectsForEmployeeForDate(session.EmployeeId, oneWeekAgo, token);
+            await client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, oneWeekAgo, token);
         var projectList = hoursLoggedOnProjectsLastWeek.ToList();
 
         if (projectList.Count == 0)

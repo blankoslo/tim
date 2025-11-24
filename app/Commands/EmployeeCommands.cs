@@ -12,11 +12,11 @@ class EmployeeCommands
     public async Task List(ConsoleAppContext ctx, bool includeInactive = false, string? customer = null, bool ids = false, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
-        var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
 
         if (customer == null)
         {
-            var res = await folqClient.GetEmployees(token);
+            var res = await client.GetEmployees(token);
             var steadies = res
                 .Where(e => e.ActivelyEmployeed() || includeInactive)
                 .OrderBy(e => e.Id)
@@ -31,7 +31,7 @@ class EmployeeCommands
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var from = today.AddDays(-20);
-            var atClients = await folqClient.GetRpcEmployeesOnProjects(from, today, token);
+            var atClients = await client.GetRpcEmployeesOnProjects(from, today, token);
             foreach (var empsAtCustomer in atClients.Where(c => c.Customer_Name == customer).GroupBy(e => e.Customer_Id))
             {
                 foreach (var emp in empsAtCustomer.ToList())
@@ -55,33 +55,33 @@ class EmployeeCommands
     public async Task Me(ConsoleAppContext ctx, CancellationToken token)
     {
         var session = ctx.GetUserSession();
-        var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
-        var emp = await folqClient.GetEmployeeByEmail(session.Email, token);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var emp = await client.GetEmployeeByEmail(session.Email, token);
         if (emp != null)
         {
             Console.MarkupLine(Formatting.FormatOther(emp));
         }
         else
         {
-            Console.MarkupLine($"Fant deg ikke i Folq på epost {session.Email}");
+            Console.MarkupLine($"Fant deg ikke i Floq på epost {session.Email}");
         }
     }
 
     /// <summary>Hent en spesifikk ansatts detaljer</summary>
-    /// <param name="employeeId">-e, EmployeeID i Folq.</param>
+    /// <param name="employeeId">-e, EmployeeID i Floq.</param>
     [Command("")]
     public async Task Get(ConsoleAppContext ctx, [Argument] int employeeId, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
-        var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
-        var emp = await folqClient.GetEmployee(employeeId, token);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var emp = await client.GetEmployee(employeeId, token);
         if (emp != null)
         {
             Console.MarkupLine(Formatting.FormatOther(emp));
         }
         else
         {
-            Console.MarkupLine($"Fant ikke ansatt {employeeId} i Folq");
+            Console.MarkupLine($"Fant ikke ansatt {employeeId} i Floq");
         }
     }
 }

@@ -15,7 +15,7 @@
     
     <Authors>blankdev, johnkors</Authors>
     <PackageId>BlankDev.Tools.Tim</PackageId>
-    <Description>Folq CLI</Description>
+    <Description>Floq CLI</Description>
     <License>LICENSE</License>
     <PackageTags>blankdev, cli, tools</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

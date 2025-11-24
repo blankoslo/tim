@@ -3,8 +3,8 @@ using System.Net;
 
 public class DeprecatedAuthCommands
 {
-    // Beholder koden i tilfelle vi skal gjøre noe med folq auth senere
-    [Obsolete("Bruk folq login istedet")]
+    // Beholder koden i tilfelle vi skal gjøre noe med Floq auth senere
+    [Obsolete("Bruk floq login istedet")]
     public static async Task GoogleLogin(CancellationToken token)
     {
         Console.WriteLine("Åpner nettleser for å logge inn direkte mot Google");

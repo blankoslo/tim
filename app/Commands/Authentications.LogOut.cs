@@ -4,7 +4,7 @@ internal partial class Authentications
     [Command("logout")]
     public async Task Logout(ConsoleAppContext ctx, CancellationToken token = default)
     {
-        await UserSecretsManager.RemoveFolqSession(token);
+        await UserSecretsManager.RemoveFloqSession(token);
         Console.WriteLine("kthxbye!");
     }
 }

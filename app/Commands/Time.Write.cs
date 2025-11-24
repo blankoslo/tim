@@ -67,10 +67,10 @@ internal partial class Time
                                $"[purple]{targetProjectCode}[/] " +
                                $"[white][[{dates.First():dd.MM}-{dates.Last():dd.MM}]][/]");
 
-        var folqClient = HttpClientFactory.CreateFolqClientForUser(session);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
         foreach (var day in dates)
         {
-            var loggedHoursForDay = await folqClient.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
+            var loggedHoursForDay = await client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
             var loggedHoursForDayAndProject = loggedHoursForDay.SingleOrDefault(h => h.Id == targetProjectCode);
             if (loggedHoursForDayAndProject is { Minutes: > 0 })
             {
@@ -88,7 +88,7 @@ internal partial class Time
                 if (overwrite)
                 {
                     var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesDiffTowardsTarget, targetProjectCode);
-                    await folqClient.AddTimeEntry(timeEntryRequest, cancellationToken);
+                    await client.AddTimeEntry(timeEntryRequest, cancellationToken);
                     AnsiConsole.MarkupLine($"[green]✅ Endret til {hoursFriendlyStr}t {targetProjectCode} {day:dddd dd. MMMM}[/]");
                 }
                 else
@@ -105,7 +105,7 @@ internal partial class Time
                     continue;
                 }
                 var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesPerDay, targetProjectCode);
-                await folqClient.AddTimeEntry(timeEntryRequest, cancellationToken);
+                await client.AddTimeEntry(timeEntryRequest, cancellationToken);
                 AnsiConsole.MarkupLine($"[green]✅ {hoursFriendlyStr} {targetProjectCode} {day:dddd dd. MMMM}[/]");
             }
         }

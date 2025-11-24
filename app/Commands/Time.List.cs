@@ -6,8 +6,8 @@ internal partial class Time
 {
     /// <summary>Lister førte timer</summary>
     /// <param name="weekRange">-r, Hvilken periode.  Gyldige: "Current|Previous"</param>
-    /// <param name="emp">-e, Hvem sine timer. EmployeeID i Folq.  Default: innlogget ansatt"</param>
-    /// <param name="customer">-c, Filtrer på kunde. Kundekode i Folq. Eks "ANE" for Aneo Mobility.</param>
+    /// <param name="emp">-e, Hvem sine timer. EmployeeID i Floq.  Default: innlogget ansatt"</param>
+    /// <param name="customer">-c, Filtrer på kunde. Kundekode i Floq. Eks "ANE" for Aneo Mobility.</param>
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
     public async Task List(ConsoleAppContext ctx,
@@ -47,15 +47,15 @@ internal partial class Time
                 employeeIds.Add(session.EmployeeId); // fallback
         }
 
-        FloqClient folqClient = HttpClientFactory.CreateFolqClientForUser(session);
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
         foreach (var id in employeeIds)
         {
-            await ProcessEmployee(range, id, customer, ct, session, folqClient);
+            await ProcessEmployee(range, id, customer, ct, session, client);
         }
     }
 
     private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer, CancellationToken ct,
-        UserSession session, FloqClient folqClient)
+        UserSession session, FloqClient client)
     {
         var dates = GetDates(range);
 
@@ -68,7 +68,7 @@ internal partial class Time
             .Cropping(VerticalOverflowCropping.Top)
             .StartAsync(async liveCtx =>
             {
-                var report = await CreateReport(range, dates, folqClient, empId, customer, session, ct);
+                var report = await CreateReport(range, dates, client, empId, customer, session, ct);
                 if (report != null)
                 {
                     string? caption = GetCaption(report, dates, range);
@@ -104,7 +104,7 @@ internal partial class Time
     }
 
     private static async Task<WeeklyTimeforingReport?> CreateReport(SelectedRange range, DateOnly[] dates,
-        FloqClient folqClient,
+        FloqClient client,
         int employeeId,
         string? customer,
         UserSession session,
@@ -115,13 +115,13 @@ internal partial class Time
         Employee? emp = null;
         if (sessionEmployeeId != employeeId)
         {
-            emp = await folqClient.GetEmployee(employeeId, ct);
+            emp = await client.GetEmployee(employeeId, ct);
         }
 
         Dictionary<DateOnly, Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
         foreach (DateOnly singleDay in dates)
         {
-            var t = folqClient.GetRpcProjectsForEmployeeForDate(employeeId, singleDay, ct);
+            var t = client.GetRpcProjectsForEmployeeForDate(employeeId, singleDay, ct);
             allTasks.Add(singleDay, t);
         }
 

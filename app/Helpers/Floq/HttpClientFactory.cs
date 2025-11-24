@@ -8,19 +8,19 @@ public class HttpClientFactory
                                                    BaseAddress = new Uri("https://api-prod.floq.no"),
                                                };
 
-    public static FloqClient CreateFolqClientForUser(UserSession session)
+    public static FloqClient CreateFloqClientForUser(UserSession session)
     {
-        return CreateFolqClientForUser(session.AccessToken, session.EmployeeId);
+        return CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
     }
 
-    public static FloqClient CreateFolqClientForUser(string accessToken, int? employeeId = null)
+    public static FloqClient CreateFloqClientForUser(string accessToken, int? employeeId = null)
     {
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         if (employeeId is {} empId )
         {
             Client.DefaultRequestHeaders.Add("User-Agent", [
                 $"tim/{AppInfoHelper.App.MajorMinorPatch}",
-                $"folq-employee/{empId}"
+                $"floq-employee/{empId}"
             ]);
         }
         else

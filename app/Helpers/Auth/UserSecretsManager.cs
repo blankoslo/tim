@@ -29,14 +29,12 @@ public class UserSecretsManager
         var secretsPath = GetAppDataPath();
         Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
 
-        // Read existing secrets to preserve other fields (upsert operation)
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
 
-        // Update only Folq-related fields
-        secrets["Folq:AccessToken"] = data.AccessToken;
-        secrets["Folq:RefreshToken"] = data.RefreshToken;
-        secrets["Folq:ExpiresAt"] = DateTime.Parse(data.ExpireDate).ToString("O");
-        secrets["Folq:Email"] = data.UserEmail;
+        secrets["Floq:AccessToken"] = data.AccessToken;
+        secrets["Floq:RefreshToken"] = data.RefreshToken;
+        secrets["Floq:ExpiresAt"] = DateTime.Parse(data.ExpireDate).ToString("O");
+        secrets["Floq:Email"] = data.UserEmail;
 
         if (employee != null)
         {
@@ -48,7 +46,7 @@ public class UserSecretsManager
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
     }
 
-    public static async Task<UserSession?> GetFolqSession(CancellationToken token)
+    public static async Task<UserSession?> GetFloqSession(CancellationToken token)
     {
         var secrets = await ReadAsDictionary(token);
         if (secrets == null)
@@ -56,7 +54,7 @@ public class UserSecretsManager
             return null;
         }
 
-        if (!secrets.TryGetValue("Folq:AccessToken", out var accessToken) || string.IsNullOrEmpty(accessToken))
+        if (!secrets.TryGetValue("Floq:AccessToken", out var accessToken) || string.IsNullOrEmpty(accessToken))
         {
             return null;
         }
@@ -74,7 +72,7 @@ public class UserSecretsManager
             throw new Exception("Logg inn på nytt");
         }
 
-        var session = new UserSession(empName, secrets["Folq:Email"], accessToken, int.Parse(empId), DateTime.Parse(secrets["Folq:ExpiresAt"]));
+        var session = new UserSession(empName, secrets["Floq:Email"], accessToken, int.Parse(empId), DateTime.Parse(secrets["Floq:ExpiresAt"]));
 
 
         return session;
@@ -203,7 +201,7 @@ public class UserSecretsManager
             .Replace("\t", "\\t");
     }
 
-    public static async Task RemoveFolqSession(CancellationToken token)
+    public static async Task RemoveFloqSession(CancellationToken token)
     {
         var secretsPath = GetAppDataPath();
         if (File.Exists(secretsPath))
@@ -211,10 +209,10 @@ public class UserSecretsManager
             var secrets = await ReadAsDictionary(token);
             if (secrets != null)
             {
-                secrets.Remove("Folq:AccessToken");
-                secrets.Remove("Folq:RefreshToken");
-                secrets.Remove("Folq:ExpiresAt");
-                secrets.Remove("Folq:Email");
+                secrets.Remove("Floq:AccessToken");
+                secrets.Remove("Floq:RefreshToken");
+                secrets.Remove("Floq:ExpiresAt");
+                secrets.Remove("Floq:Email");
                 secrets.Remove("Employee:Id");
                 secrets.Remove("Employee:Name");
                 var secretsJson = ToJson(secrets);
