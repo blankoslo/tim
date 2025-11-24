@@ -27,3 +27,4 @@ jobs:
         run: ./publish.sh ${{env.VERSION}} ${{ secrets.STORAGE_APIKEY }} ${{ secrets.NUGET_APIKEY }}
         env:
           VERSION: ${{ env.VERSION }}
+          GH_TOKEN: ${{ github.token }}
