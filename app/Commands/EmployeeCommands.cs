@@ -9,7 +9,6 @@ class EmployeeCommands
     /// <param name="customer">-c, Kundenavn, f.eks. "Aneo Mobility"</param>
     /// <param name="ids">
     [Command("list|emp ls")]
-    [Hidden]
     public async Task List(ConsoleAppContext ctx, bool includeInactive = false, string? customer = null, bool ids = false, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
@@ -53,7 +52,6 @@ class EmployeeCommands
 
 
     /// <summary>Hent mine ansatt-detaljer</summary>
-    [Hidden]
     public async Task Me(ConsoleAppContext ctx, CancellationToken token)
     {
         var session = ctx.GetUserSession();
@@ -72,7 +70,6 @@ class EmployeeCommands
     /// <summary>Hent en spesifikk ansatts detaljer</summary>
     /// <param name="employeeId">-e, EmployeeID i Folq.</param>
     [Command("")]
-    [Hidden]
     public async Task Get(ConsoleAppContext ctx, [Argument] int employeeId, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
