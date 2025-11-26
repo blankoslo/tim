@@ -10,6 +10,7 @@ internal partial class Time
     /// <param name="customer">-c, Filtrer på kunde. Kundekode i Floq. Eks "ANE" for Aneo Mobility.</param>
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
+    [ConsoleAppFilter<AddStdinToContext>]
     public async Task List(ConsoleAppContext ctx,
         SelectedRange range = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
@@ -22,20 +23,18 @@ internal partial class Time
         string? customer = null,
         CancellationToken ct = default)
     {
-        var session = consoleCtx.GetUserSession();
+        var session = consoleCtx.UserSession;
         var employeeIds = new List<int>();
 
-        // 1) Read from STDIN if piped
         if (System.Console.IsInputRedirected)
         {
-            string? line;
-            while ((line = System.Console.ReadLine()) != null)
+            consoleCtx.StandardInput(line =>
             {
-                if (int.TryParse(line, out var pipedId))
+                if (line.IsInteger(out var empIdFromStdIn))
                 {
-                    employeeIds.Add(pipedId);
+                    employeeIds.Add(empIdFromStdIn);
                 }
-            }
+            });
         }
 
         // 2) If no piped input, use employeeId argument or fallback to logged-in

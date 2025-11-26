@@ -10,7 +10,7 @@ internal partial class Time
     [Command("write")]
     public async Task Write(
         ConsoleAppContext ctx,
-        [HideDefaultValue, Argument]string? project = null,
+        [HideDefaultValue, Argument] string? project = null,
         SelectedRange range = SelectedRange.SingleDay,
         decimal? hours = 7.5m,
         string? date = null,
