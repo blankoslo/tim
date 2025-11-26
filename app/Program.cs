@@ -24,7 +24,7 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
     if (session is { IsExpired: false })
     {
         var newCtx = ctx with { State = session };
-        await Time.ListWeek(newCtx, SelectedRange.Current, ct: token);
+        await Time.ListPeriod(newCtx, SelectedRange.CurrentWeek, ct: token);
         return;
     }
 

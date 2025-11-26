@@ -11,12 +11,12 @@ internal partial class Time
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
     public async Task List(ConsoleAppContext ctx,
-        SelectedRange weekRange = SelectedRange.Current,
+        SelectedRange weekRange = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
         string? customer = null,
-        CancellationToken token = default) => await ListWeek(ctx, weekRange, emp, customer, token);
+        CancellationToken token = default) => await ListPeriod(ctx, weekRange, emp, customer, token);
 
-    internal static async Task ListWeek(ConsoleAppContext consoleCtx,
+    internal static async Task ListPeriod(ConsoleAppContext consoleCtx,
         SelectedRange range,
         int? employeeId = null,
         string? customer = null,
@@ -57,7 +57,7 @@ internal partial class Time
     private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer, CancellationToken ct,
         UserSession session, FloqClient client)
     {
-        var dates = GetDates(range);
+        var dates = GetDatesToWrite(range);
 
         Table table = new();
 
@@ -303,45 +303,56 @@ internal partial class Time
         liveCtx.Refresh();
     }
 
-    private static DateOnly[] GetDates(SelectedRange? week)
+    private static DateOnly[] GetDatesToWrite(SelectedRange? range)
     {
-        if (week is SelectedRange.Current or SelectedRange.Previous)
+        return range switch
         {
-            DateOnly dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
-            if (week == SelectedRange.Previous)
-            {
-                dateInWeek = dateInWeek.AddDays(-7);
-            }
+            SelectedRange.Today => [DateOnly.FromDateTime(DateTime.UtcNow)],
+            SelectedRange.CurrentWeek or SelectedRange.PreviousWeek => GetWeekDays(range),
+            SelectedRange.CurrentMonth or SelectedRange.PreviousMonth => GetMonthDays(range),
+            _ => []
+        };
+    }
 
-            int year = ISOWeek.GetYear(dateInWeek);
-            int weekNo = ISOWeek.GetWeekOfYear(dateInWeek);
+    public static DateOnly[] GetWeekDays(SelectedRange? week)
+    {
+        DateOnly dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
 
-            var weekDaysForRange = Enumerable.Range(1, 5)
-                .Select(dayOfWeek => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)dayOfWeek)))
-                .ToArray();
-
-            return weekDaysForRange;
-        }
-        else
+        if (week == SelectedRange.PreviousWeek)
         {
-            DateOnly dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
-            if (week == SelectedRange.PreviousMonth)
-            {
-                dateInMonth = dateInMonth.AddMonths(-1);
-            }
-
-            int year = dateInMonth.Year;
-            int month = dateInMonth.Month;
-
-            var daysInMonth = DateTime.DaysInMonth(year, month);
-
-            var monthDaysForRange = Enumerable.Range(1, daysInMonth)
-                .Select(day => new DateOnly(year, month, day))
-                .Where(d => d.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
-                .ToArray();
-
-            return monthDaysForRange;
+            dateInWeek = dateInWeek.AddDays(-7);
         }
+
+        int year = ISOWeek.GetYear(dateInWeek);
+        int weekNo = ISOWeek.GetWeekOfYear(dateInWeek);
+
+        var weekDaysForRange = Enumerable.Range(1, 5)
+            .Select(dayOfWeek => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)dayOfWeek)))
+            .ToArray();
+
+        return weekDaysForRange;
+    }
+
+    public static DateOnly[] GetMonthDays(SelectedRange? week)
+    {
+        DateOnly dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (week == SelectedRange.PreviousMonth)
+        {
+            dateInMonth = dateInMonth.AddMonths(-1);
+        }
+
+        int year = dateInMonth.Year;
+        int month = dateInMonth.Month;
+
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        var monthDaysForRange = Enumerable.Range(1, daysInMonth)
+            .Select(day => new DateOnly(year, month, day))
+            .Where(d => d.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
+            .ToArray();
+
+        return monthDaysForRange;
+
     }
 
     private static string Shorten(string someString, int defaultLength = 20)

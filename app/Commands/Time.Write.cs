@@ -8,25 +8,29 @@ internal partial class Time
     public async Task Write(
         ConsoleAppContext ctx,
         [HideDefaultValue, Argument]string? project = null,
-        SelectedRange range = SelectedRange.Current,
+        SelectedRange range = SelectedRange.Today,
         decimal? hours = 7.5m,
-        CancellationToken token = default) => await WriteLogEntries(range, project, hours, ctx, token);
+        CancellationToken token = default) => await WriteLogEntries(ctx, range, project, hours, token);
 
+    private const int minutesPerDay = 450;
 
-    internal static async Task WriteLogEntries(SelectedRange week, string? project, decimal? hours, ConsoleAppContext ctx, CancellationToken cancellationToken = default)
+    private static async Task WriteLogEntries(ConsoleAppContext ctx,
+        SelectedRange? mode = null,
+        string? project = null,
+        decimal? hours = null,
+        CancellationToken cancellationToken = default)
     {
         var session = ctx.GetUserSession();
-        await ListWeek(ctx,week, ct: cancellationToken);
-
-        var dates = GetDates(week);
-
-        var minutesPerDay = 450;
-        if (hours.HasValue)
+        SelectedRange displayList = mode switch
         {
-            minutesPerDay = (int)(hours.Value * 60);
-        }
+            SelectedRange.Today => SelectedRange.CurrentWeek,
+            null => SelectedRange.CurrentWeek,
+            _ => mode.Value
+        };
+        await ListPeriod(ctx, displayList, ct: cancellationToken);
 
-        var hoursFriendlyStr= minutesPerDay > 0 ? $"{minutesPerDay / 60m:F1}" : "0";
+        var datesToWrite = GetDatesToWrite(mode);
+
 
         string? targetProjectCode;
         if (project != null)
@@ -43,16 +47,16 @@ internal partial class Time
             }
             else
             {
-                AnsiConsole.MarkupLine("[red]❌ Ingen prosjektkode angitt, og ingen default prosjekt funnet.[/]");
+                Console.MarkupLine("[red]❌ Ingen prosjektkode angitt og ingen default prosjekt funnet.[/]");
                 return;
             }
         }
 
-        var isConfirmed = AnsiConsole.Prompt(
+        var isConfirmed = Console.Prompt(
             new ConfirmationPrompt($"Timeføre " +
-                                   $"[bold]{hoursFriendlyStr}t[/] på " +
+                                   $"[bold]{hours}t[/] på " +
                                    $"[purple]{targetProjectCode}[/] " +
-                                   $"[white][[{dates.First():dd.MM}-{dates.Last():dd.MM}]][/]")
+                                   $"[white][[{TimeforingDisplayStr(datesToWrite)}][/]")
                 .ShowDefaultValue(true));
 
         if (!isConfirmed)
@@ -61,56 +65,89 @@ internal partial class Time
             return;
         }
 
+        await WriteEntriesForDates(targetProjectCode, datesToWrite, session, hours, cancellationToken);
+
+        await ListPeriod(ctx, displayList, ct: cancellationToken);
+    }
+
+    private static string TimeforingDisplayStr(DateOnly[] datesToWrite)
+    {
+        var timeStr = datesToWrite switch
+        {
+            { Length: > 1 } => $"{datesToWrite.First():dd.MM}-{datesToWrite.Last():dd.MM}]",
+            { Length: 1 } => $"{datesToWrite[0]:dd.MM}]",
+            { Length: 0 } => "Ingen datoer angitt",
+        };
+        return timeStr;
+    }
+
+    private static async Task WriteEntriesForDates(string targetProjectCode, DateOnly[] dates,
+        UserSession session, decimal? hours = null, CancellationToken cancellationToken = default)
+    {
+        hours ??= 7.5m;
+
         // Console write what values we are doing, what week and what values we are logging:
-        AnsiConsole.MarkupLine($"Timefører " +
-                               $"[bold]{hoursFriendlyStr}t[/] på " +
-                               $"[purple]{targetProjectCode}[/] " +
-                               $"[white][[{dates.First():dd.MM}-{dates.Last():dd.MM}]][/]");
+        Console.MarkupLine($"Timefører " +
+                           $"[bold]{hours}t[/] på " +
+                           $"[purple]{targetProjectCode}[/] " +
+                           $"[white][[{TimeforingDisplayStr(dates)}][/]");
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
+
         foreach (var day in dates)
         {
-            var loggedHoursForDay = await client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
-            var loggedHoursForDayAndProject = loggedHoursForDay.SingleOrDefault(h => h.Id == targetProjectCode);
-            if (loggedHoursForDayAndProject is { Minutes: > 0 })
-            {
-                var minutesDiffTowardsTarget = minutesPerDay - loggedHoursForDayAndProject.Minutes;
-                if (minutesDiffTowardsTarget == 0)
-                {
-                    AnsiConsole.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr}t {day:dd.MM}[/]");
-                    continue;
-                }
-                AnsiConsole.MarkupLine($"[yellow]⚠️ {targetProjectCode} har {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)}t {day:dddd dd. MMMM}[/]");
-                var overwrite = AnsiConsole.Prompt(
-                    new ConfirmationPrompt(
-                        $"Endre fra {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)} til {hoursFriendlyStr} timer?"));
+            await WriteEntryForDay(client, session, day, targetProjectCode,  hours, cancellationToken);
+        }
+    }
 
-                if (overwrite)
-                {
-                    var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesDiffTowardsTarget, targetProjectCode);
-                    await client.AddTimeEntry(timeEntryRequest, cancellationToken);
-                    AnsiConsole.MarkupLine($"[green]✅ Endret til {hoursFriendlyStr}t {targetProjectCode} {day:dddd dd. MMMM}[/]");
-                }
-                else
-                {
-                    AnsiConsole.MarkupLine($"[white]Beholdt {hoursFriendlyStr} på {targetProjectCode} den {day:dddd dd. MMMM}[/]");
-                }
+    private static async Task WriteEntryForDay(FloqClient client, UserSession session, DateOnly day, string targetProjectCode, decimal? hours = null, CancellationToken cancellationToken = default)
+    {
+        var minutesToLog = minutesPerDay;
+
+        if (hours.HasValue)
+        {
+            minutesToLog = (int)(hours.Value * 60);
+        }
+
+        var hoursFriendlyStr = minutesToLog > 0 ? $"{minutesToLog / 60m:F1}" : "0";
+
+        var loggedHoursForDay = await client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
+        var loggedHoursForDayAndProject = loggedHoursForDay.SingleOrDefault(h => h.Id == targetProjectCode);
+        if (loggedHoursForDayAndProject is { Minutes: > 0 })
+        {
+            var minutesDiffTowardsTarget = minutesToLog - loggedHoursForDayAndProject.Minutes;
+            if (minutesDiffTowardsTarget == 0)
+            {
+                Console.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr}t {day:dd.MM}[/]");
+                return;
+            }
+            Console.MarkupLine($"[yellow]⚠️ {targetProjectCode} har {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)}t {day:dddd dd. MMMM}[/]");
+            var overwrite = Console.Prompt(
+                new ConfirmationPrompt(
+                    $"Endre fra {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)} til {hoursFriendlyStr} timer?"));
+
+            if (overwrite)
+            {
+                var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesDiffTowardsTarget, targetProjectCode);
+                await client.AddTimeEntry(timeEntryRequest, cancellationToken);
+                Console.MarkupLine($"[green]✅ Endret til {hoursFriendlyStr}t {targetProjectCode} {day:dddd dd. MMMM}[/]");
             }
             else
             {
-                var minutesDiffTowardsTarget = minutesPerDay - loggedHoursForDayAndProject?.Minutes;
-                if (minutesDiffTowardsTarget == 0)
-                {
-                    AnsiConsole.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr} {day:dd.MM}[/]");
-                    continue;
-                }
-                var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesPerDay, targetProjectCode);
-                await client.AddTimeEntry(timeEntryRequest, cancellationToken);
-                AnsiConsole.MarkupLine($"[green]✅ {hoursFriendlyStr} {targetProjectCode} {day:dddd dd. MMMM}[/]");
+                Console.MarkupLine($"[white]Beholdt {hoursFriendlyStr} på {targetProjectCode} den {day:dddd dd. MMMM}[/]");
             }
         }
-
-        await Time.ListWeek(ctx, week, ct: cancellationToken);
-
+        else
+        {
+            var minutesDiffTowardsTarget = minutesPerDay - loggedHoursForDayAndProject?.Minutes;
+            if (minutesDiffTowardsTarget == 0)
+            {
+                Console.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr} {day:dd.MM}[/]");
+                return;
+            }
+            var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesToLog, targetProjectCode);
+            await client.AddTimeEntry(timeEntryRequest, cancellationToken);
+            Console.MarkupLine($"[green]✅ {hoursFriendlyStr} {targetProjectCode} {day:dddd dd. MMMM}[/]");
+        }
     }
 }
