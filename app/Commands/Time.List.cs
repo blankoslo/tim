@@ -5,16 +5,16 @@ using Spectre.Console.Rendering;
 internal partial class Time
 {
     /// <summary>Lister førte timer</summary>
-    /// <param name="weekRange">-r, Hvilken periode.  Gyldige: "Current|Previous"</param>
+    /// <param name="range">-r, Hvilken periode. SingleDay,CurrentWeek,PreviousWeek,CurrentMonth,PreviousMonth"</param>
     /// <param name="emp">-e, Hvem sine timer. EmployeeID i Floq.  Default: innlogget ansatt"</param>
     /// <param name="customer">-c, Filtrer på kunde. Kundekode i Floq. Eks "ANE" for Aneo Mobility.</param>
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
     public async Task List(ConsoleAppContext ctx,
-        SelectedRange weekRange = SelectedRange.CurrentWeek,
+        SelectedRange range = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
         string? customer = null,
-        CancellationToken token = default) => await ListPeriod(ctx, weekRange, emp, customer, token);
+        CancellationToken token = default) => await ListPeriod(ctx, range, emp, customer, token);
 
     internal static async Task ListPeriod(ConsoleAppContext consoleCtx,
         SelectedRange range,
@@ -172,7 +172,6 @@ internal partial class Time
         public Timeforing? GetEntry(ProjectDay proj)
         {
             return ProjectTimeforing[proj];
-
         }
 
         public decimal GetDailyHoursSum(DateOnly projectDay)
@@ -303,14 +302,15 @@ internal partial class Time
         liveCtx.Refresh();
     }
 
-    private static DateOnly[] GetDatesToWrite(SelectedRange? range)
+    private static DateOnly[] GetDatesToWrite(SelectedRange? range, DateOnly? date = null)
     {
-        return range switch
+        return (date, range) switch
         {
-            SelectedRange.Today => [DateOnly.FromDateTime(DateTime.UtcNow)],
-            SelectedRange.CurrentWeek or SelectedRange.PreviousWeek => GetWeekDays(range),
-            SelectedRange.CurrentMonth or SelectedRange.PreviousMonth => GetMonthDays(range),
-            _ => []
+            (not null, _) => [date.Value],
+            (_, SelectedRange.SingleDay) => [DateOnly.FromDateTime(DateTime.UtcNow)],
+            (_, SelectedRange.CurrentWeek or SelectedRange.PreviousWeek) => GetWeekDays(range),
+            (_, SelectedRange.CurrentMonth or SelectedRange.PreviousMonth) => GetMonthDays(range),
+            _ => throw new Exception("Ugyldig kommando, du må enten velge en dato eller en range. Range:'{range}', dato:'{date}'")
         };
     }
 

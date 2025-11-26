@@ -1,16 +1,21 @@
+using System.ComponentModel;
+
 internal partial class Time
 {
     /// <summary>Registrerer nye timer</summary>
     /// <param name="range">-w, Hvilken uke som skal timeføres. Gyldige: "Current|Previous"</param>
     /// <param name="project">-p, Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt</param>
     /// <param name="hours">-h, Antall timer som skal føres</param>
+    /// <param name="date">-d, Dato som skal føres, MM.dd. Default dagens dato.</param>
     [Command("write")]
     public async Task Write(
         ConsoleAppContext ctx,
         [HideDefaultValue, Argument]string? project = null,
-        SelectedRange range = SelectedRange.Today,
+        SelectedRange range = SelectedRange.SingleDay,
         decimal? hours = 7.5m,
-        CancellationToken token = default) => await WriteLogEntries(ctx, range, project, hours, token);
+        string? date = null,
+        bool? yes = false,
+        CancellationToken token = default) => await WriteLogEntries(ctx, range, project, hours, date, yes, token);
 
     private const int minutesPerDay = 450;
 
@@ -18,24 +23,37 @@ internal partial class Time
         SelectedRange? mode = null,
         string? project = null,
         decimal? hours = null,
+        string? dateStr = null,
+        bool? skipConfirmations = null,
         CancellationToken cancellationToken = default)
     {
         var session = ctx.GetUserSession();
         SelectedRange displayList = mode switch
         {
-            SelectedRange.Today => SelectedRange.CurrentWeek,
+            SelectedRange.SingleDay => SelectedRange.CurrentWeek,
             null => SelectedRange.CurrentWeek,
             _ => mode.Value
         };
         await ListPeriod(ctx, displayList, ct: cancellationToken);
 
+        var currentYear = DateTime.UtcNow.Year;
+        if (dateStr is not null)
+        {
+            var couldParse = DateOnly.TryParseExact($"{currentYear}.{dateStr}", "yyyy.dd.MM", out var date);
+            if (!couldParse)
+            {
+                Console.WriteLine($"Kunne ikke tolke datoen du oppga: '{dateStr}'. Bruk format dd.MM, for eksempel 15.03 for 15. mars.");
+                return;
+            }
+        }
+
+
         var datesToWrite = GetDatesToWrite(mode);
 
-
-        string? targetProjectCode;
+        string projectToWriteOn;
         if (project != null)
         {
-            targetProjectCode = project;
+            projectToWriteOn = project;
         }
         else
         {
@@ -43,7 +61,7 @@ internal partial class Time
             var defaultProj = await UserSecretsManager.GetDefaultProject(cancellationToken);
             if (defaultProj != null)
             {
-                targetProjectCode = defaultProj.Id;
+                projectToWriteOn = defaultProj.Id;
             }
             else
             {
@@ -52,23 +70,30 @@ internal partial class Time
             }
         }
 
-        var isConfirmed = Console.Prompt(
-            new ConfirmationPrompt($"Timeføre " +
-                                   $"[bold]{hours}t[/] på " +
-                                   $"[purple]{targetProjectCode}[/] " +
-                                   $"[white][[{TimeforingDisplayStr(datesToWrite)}][/]")
-                .ShowDefaultValue(true));
+        decimal hoursToWrite = hours ?? 7.5m;
 
-        if (!isConfirmed)
+
+
+        if (datesToWrite.Length == 1 && skipConfirmations is null or false)
         {
-            Console.MarkupLine("[yellow]Timeføring avbrutt.[/]");
-            return;
+            var selectionPrompt = new ConfirmationPrompt($"Timeføre " +
+                                                         $"[bold]{hoursToWrite}t[/] på " +
+                                                         $"[purple]{projectToWriteOn}[/] " +
+                                                         $"[white][[{TimeforingDisplayStr(datesToWrite)}][/]");
+            var confirmed = Console.Prompt(selectionPrompt);
+            if (!confirmed)
+            {
+                Console.MarkupLine("[yellow]Ok! Timeføring avbrutt.[/]");
+                return;
+            }
         }
 
-        await WriteEntriesForDates(targetProjectCode, datesToWrite, session, hours, cancellationToken);
+
+        await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true, cancellationToken);
 
         await ListPeriod(ctx, displayList, ct: cancellationToken);
     }
+
 
     private static string TimeforingDisplayStr(DateOnly[] datesToWrite)
     {
@@ -82,25 +107,20 @@ internal partial class Time
     }
 
     private static async Task WriteEntriesForDates(string targetProjectCode, DateOnly[] dates,
-        UserSession session, decimal? hours = null, CancellationToken cancellationToken = default)
+        UserSession session, decimal hours, bool yes,
+        CancellationToken cancellationToken = default)
     {
-        hours ??= 7.5m;
-
-        // Console write what values we are doing, what week and what values we are logging:
-        Console.MarkupLine($"Timefører " +
-                           $"[bold]{hours}t[/] på " +
-                           $"[purple]{targetProjectCode}[/] " +
-                           $"[white][[{TimeforingDisplayStr(dates)}][/]");
-
         var client = HttpClientFactory.CreateFloqClientForUser(session);
 
         foreach (var day in dates)
         {
-            await WriteEntryForDay(client, session, day, targetProjectCode,  hours, cancellationToken);
+            await WriteEntryForDay(client, session, day, targetProjectCode, yes, hours, cancellationToken);
         }
     }
 
-    private static async Task WriteEntryForDay(FloqClient client, UserSession session, DateOnly day, string targetProjectCode, decimal? hours = null, CancellationToken cancellationToken = default)
+    private static async Task WriteEntryForDay(FloqClient client, UserSession session, DateOnly day,
+        string targetProjectCode, bool skipConfirm, decimal? hours = null,
+        CancellationToken cancellationToken = default)
     {
         var minutesToLog = minutesPerDay;
 
@@ -118,23 +138,36 @@ internal partial class Time
             var minutesDiffTowardsTarget = minutesToLog - loggedHoursForDayAndProject.Minutes;
             if (minutesDiffTowardsTarget == 0)
             {
-                Console.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr}t {day:dd.MM}[/]");
+                // Console.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr}t {day:dd.MM}[/]");
                 return;
             }
-            Console.MarkupLine($"[yellow]⚠️ {targetProjectCode} har {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)}t {day:dddd dd. MMMM}[/]");
-            var overwrite = Console.Prompt(
-                new ConfirmationPrompt(
-                    $"Endre fra {Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)} til {hoursFriendlyStr} timer?"));
 
-            if (overwrite)
+            var hoursDiff = (loggedHoursForDayAndProject.Minutes - hours * 60) / 60m;
+
+            var changeTxt = hoursDiff switch
+            {
+                < 0 => $"{Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)}[green]+{Math.Abs(hoursDiff.Value):F1}[/] => {hoursFriendlyStr}",
+                > 0 => $"{Formatting.MinutesToHours(loggedHoursForDayAndProject.Minutes)}[red]-{Math.Abs(hoursDiff.Value):F1}[/] => {hoursFriendlyStr}",
+                _ => "[grey]0[/]"
+            };
+            string log = $"[purple]{targetProjectCode}[/] [[{day:dd.MM}]]  {changeTxt}";
+
+            if (skipConfirm)
             {
                 var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesDiffTowardsTarget, targetProjectCode);
                 await client.AddTimeEntry(timeEntryRequest, cancellationToken);
-                Console.MarkupLine($"[green]✅ Endret til {hoursFriendlyStr}t {targetProjectCode} {day:dddd dd. MMMM}[/]");
+                Console.MarkupLine(log);
             }
             else
             {
-                Console.MarkupLine($"[white]Beholdt {hoursFriendlyStr} på {targetProjectCode} den {day:dddd dd. MMMM}[/]");
+
+                var overwrite = Console.Prompt(new ConfirmationPrompt(log));
+
+                if (overwrite)
+                {
+                    var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesDiffTowardsTarget, targetProjectCode);
+                    await client.AddTimeEntry(timeEntryRequest, cancellationToken);
+                }
             }
         }
         else
@@ -147,7 +180,7 @@ internal partial class Time
             }
             var timeEntryRequest = new TimeEntryRequest(session.EmployeeId, day, session.EmployeeId, minutesToLog, targetProjectCode);
             await client.AddTimeEntry(timeEntryRequest, cancellationToken);
-            Console.MarkupLine($"[green]✅ {hoursFriendlyStr} {targetProjectCode} {day:dddd dd. MMMM}[/]");
+            Console.MarkupLine($"[purple]{targetProjectCode}[/] {day:dd. MM}  {hoursFriendlyStr}t");
         }
     }
 }

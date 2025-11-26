@@ -2,7 +2,7 @@
 [Flags]
 public enum SelectedRange
 {
-    Today,
+    SingleDay,
     CurrentWeek,
     PreviousWeek,
     CurrentMonth,

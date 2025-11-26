@@ -1,4 +1,6 @@
-public class Formatting
+using System.Globalization;
+
+public static class Formatting
 {
     // 450 => 7.5
     public static string MinutesToHours(int projectLogMinutes)
@@ -25,5 +27,10 @@ public class Formatting
     public static string FormatEmpOnProj(RpcEmployeesOnProjectsResponse emp)
     {
         return $"[white] {emp.Customer_Name} {emp.First_Name} {emp.Last_Name}[/] [[id:{emp.Id}]]";
+    }
+
+    public static string ToNorwegianDateString(this DateOnly date)
+    {
+        return date.ToString("dd. MMMM", CultureInfo.GetCultureInfo("nb-NO"));
     }
 }
