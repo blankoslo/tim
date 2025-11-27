@@ -1,5 +1,3 @@
-using System.Reflection;
-
 internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
     public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
@@ -10,17 +8,19 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
             var existingState = context.State as GlobalState;
             if (existingState is { })
             {
-                var newState = existingState with { Session = session };
+                // Console.WriteLine("[auth] adding global state with session");
+                GlobalState newState = existingState with { Session = session };
                 await Next.InvokeAsync(context with { State = newState}, cancellationToken);
             }
             else
             {
+                // Console.WriteLine("[auth] no existing state found, creating one (filter is first");
                 await Next.InvokeAsync(context with { State = new GlobalState(session)}, cancellationToken);
             }
         }
         else
         {
-            AnsiConsole.MarkupLine("[red]Login required.[/]");
+            Console.MarkupLine("[red]Login required.[/]");
         }
     }
 }

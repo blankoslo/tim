@@ -26,7 +26,7 @@ public static class Formatting
 
     public static string FormatEmpOnProj(RpcEmployeesOnProjectsResponse emp)
     {
-        return $"[white] {emp.Customer_Name} {emp.First_Name} {emp.Last_Name}[/] [[id:{emp.Id}]]";
+        return $"[white]{emp.Customer_Name}[/] {emp.First_Name} {emp.Last_Name} [dim][[id:{emp.Id}]][/]";
     }
 
     public static string ToNorwegianDateString(this DateOnly date)

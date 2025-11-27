@@ -7,7 +7,7 @@ class EmployeeCommands
     /// <summary>Hent alle ansatte fra Floq</summary>
     /// <param name="includeInactive"></param>
     /// <param name="customer">-c, Kundenavn, f.eks. "Aneo Mobility"</param>
-    /// <param name="ids">
+    /// <param name="ids">Bare gi ut id'ene, slik at det kan pipes til 'tim ls'</param>
     [Command("list|emp ls")]
     public async Task List(ConsoleAppContext ctx, bool includeInactive = false, string? customer = null, bool ids = false, CancellationToken token = default)
     {
@@ -24,7 +24,15 @@ class EmployeeCommands
             for (var index = 0; index < steadies.Length; index++)
             {
                 var emp = steadies[index];
-                Console.MarkupLine($"({index+1}/{steadies.Length}) " + Formatting.FormatOther(emp));
+                if (ids)
+                {
+                    Console.WriteLine(emp.Id);
+                }
+                else
+                {
+                    Console.MarkupLine($"({index+1}/{steadies.Length}) " + Formatting.FormatOther(emp));
+                }
+
             }
         }
         else
@@ -35,6 +43,7 @@ class EmployeeCommands
             var atClients = await client.GetRpcEmployeesOnProjects(from, today, token);
             var empsAtCustomers = atClients
                 .Where(c => c.Customer_Name == customer)
+                .OrderBy(e => e.Id)
                 .GroupBy(e => e.Customer_Id);
 
             foreach (var empsAtCustomer in empsAtCustomers)
