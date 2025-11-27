@@ -62,7 +62,17 @@ public class FloqClient(HttpClient client)
     {
         return client.SendAsync(msg, token);
     }
+
+    public async Task<IEnumerable<GetAllProjectsIncludeCustomer>?> GetAllProjectsWithCustomer()
+    {
+        return await client.GetFromJsonAsync<IEnumerable<GetAllProjectsIncludeCustomer>>("/projects?select=id,name,active,billable,customer(id,name)");
+    }
 }
+
+public record GetAllProjectsIncludeCustomer(string Id, string Name, bool Active, string Billable, GetAllProjectCustomer Customer);
+
+public record GetAllProjectCustomer(string Id, string Name);
+
 public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int PercentageStaffed);
 public record RpcEmployeesOnProjectsResponse(string Customer_Id, string Customer_Name, string First_Name, string Last_Name, int Id, string Emoji);
 

@@ -3,9 +3,12 @@ using System.Globalization;
 public static class Formatting
 {
     // 450 => 7.5
-    public static string MinutesToHours(int projectLogMinutes)
+    public static string MinutesToHours(int? projectLogMinutes)
     {
-        return (projectLogMinutes / 60m).ToString("F1");
+        if (projectLogMinutes == null)
+            return "0";
+
+        return (projectLogMinutes.Value / 60m).ToString("F1");
     }
 
     public static string Format(UserDefaultedProject proj)
