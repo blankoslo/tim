@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 
 internal partial class Authentications
 {
@@ -17,11 +18,13 @@ internal partial class Authentications
             .Spinner(Spinner.Known.Star)
             .StartAsync("Starter login-flyt…", async ctx1 =>
             {
+                int port = FindFirstAvailablePort();
+                var redirectUrl = $"http://localhost:{port}/";
                 using var http = new HttpListener();
-                http.Prefixes.Add(GoogleOAuthConfig.Instance.RedirectUri);
+                http.Prefixes.Add(redirectUrl);
                 http.Start();
                 ctx1.Status = "Web-server started for å motta callback";
-                Process.Start(new ProcessStartInfo { FileName = $"https://inni.blank.no/login/oauth?to={TimServerConfig.LocalUrl}", UseShellExecute = true });
+                Process.Start(new ProcessStartInfo { FileName = $"https://inni.blank.no/login/oauth?to={redirectUrl}", UseShellExecute = true });
                 ctx1.Status = "Venter på at du skal skal fulløre innlogging i browser...";
                 var callback = await http.GetContextAsync().WaitAsync(token);
                 ctx1.Status = "Callback mottatt!";
@@ -49,5 +52,21 @@ internal partial class Authentications
                 ctx1.Status = "Innlogging fullført";
                 Console.MarkupLine($"Innlogget som [green]{emp.First_Name} [dim]({emp.Email})[/][/]");
             });
+    }
+
+    private static int FindFirstAvailablePort()
+    {
+        int port;
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        try
+        {
+            listener.Start();
+            port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
+        return port;
     }
 }
