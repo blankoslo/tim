@@ -7,12 +7,16 @@ $ tim --help
 Usage: [command] [-h|--help] [--version]
 
 Commands:
-  get-default    Henter default-prosjektet ditt
-  list, ls       Lister førte timer
-  login          Logger inn via browser
-  logout         Logger deg ut lokalt
-  set-default    Setter et prosjekt som default til timeføring
-  write          Registrerer nye timer
+  curl                curl '/employees?id=eq.1'
+  emp                 Hent en spesifikk ansatts detaljer
+  emp list, emp ls    Hent alle ansatte fra Floq
+  emp me              Hent mine ansatt-detaljer
+  get-default         Henter default-prosjektet ditt
+  list, ls            Lister førte timer
+  login               Logger inn via browser
+  logout              Logger deg ut lokalt
+  set-default         Setter et prosjekt som default til timeføring
+  write               Registrerer nye timer
 ```
 
 ![alt text](docs/images/demo-table.png)
@@ -50,7 +54,7 @@ Ellers har man 3 muligheter
 
 1 - .NET tool
 
- (krever .NET SDK 10):
+ (krever .NET 9 eller .NET 10):
 
 Et _GitHub Classic Token_  kan du opprette [her](https://github.com/settings/tokens). Husk å gi den `read:packages` og litt varighet da
 
@@ -100,11 +104,13 @@ Usage: write [arguments...] [options...] [-h|--help] [--version]
 Registrerer nye timer
 
 Arguments:
-  [0] <string?>    Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt
+  [0] <decimal?>    Antall timer som skal føres
 
 Options:
-  -w, --range <Range>       Hvilken uke som skal timeføres. Gyldige: "Current|Previous" (Default: Current)
-  -h, --hours <decimal?>    Antall timer som skal føres (Default: 7.5)
+  -p, --project <string?>        Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt
+  -r, --range <SelectedRange>    Hvilken uke som skal timeføres. Gyldige: "Current|Previous"
+  -d, --date <string?>           Dato som skal føres, MM.dd. Default dagens dato.
+  -y, --yes <bool?>              Bare kjørr, ikke spør om bekreftelser.
 ```
 
 
