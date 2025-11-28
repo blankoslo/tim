@@ -7,6 +7,7 @@ var app = ConsoleApp.Create();
 app.Add("", ThisWeekOrLoginRequriredCommand);
 await app.RunAsync(args);
 
+[ConsoleAppFilter<AddStdinToContext>]
 async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationToken token)
 {
     if (ctx.Arguments.Length > 0)
