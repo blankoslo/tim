@@ -3,14 +3,21 @@ using System.Net.Http.Headers;
 
 public class HttpClientFactory
 {
-    public static readonly HttpClient Client = new()
-                                               {
-                                                   BaseAddress = new Uri("https://api-prod.floq.no"),
-                                               };
+    private static FloqClient? _clientSingletion;
+
+    private static readonly HttpClient Client = new()
+                                                {
+                                                    BaseAddress = new Uri("https://api-prod.floq.no"),
+                                                };
 
     public static FloqClient CreateFloqClientForUser(UserSession session)
     {
-        return CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
+        if (_clientSingletion == null)
+        {
+            _clientSingletion = CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
+        }
+
+        return _clientSingletion;
     }
 
     public static FloqClient CreateFloqClientForUser(string accessToken, int? employeeId = null)

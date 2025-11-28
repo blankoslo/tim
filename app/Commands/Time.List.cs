@@ -267,7 +267,7 @@ internal partial class Time
 
 
         // add a cumulative sum row with running totals
-        List<string> cumulativeRow = new() { "[dim]Kumulativ[/]" };
+        List<string> cumulativeRow = new() { "[dim]Ukesum[/]" };
         decimal runningTotal = 0;
         foreach (var day in  report.Days)
         {

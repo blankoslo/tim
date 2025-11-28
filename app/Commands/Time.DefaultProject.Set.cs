@@ -1,5 +1,12 @@
 internal partial class Time
 {
+    [Hidden]
+    public async Task SetDefaultNull(ConsoleAppContext ctx, CancellationToken token = default)
+    {
+        await UserSecretsManager.StoreDefaultProject(null, token);
+        Console.MarkupLine($"[green]✅ Slettet default prosjekt[/]");
+    }
+
     /// <summary>Setter et prosjekt som default til timeføring</summary>
     /// <param name="project">-p, Prosjektets kode. Eks: 'ANE1006'</param>
     public async Task SetDefault(ConsoleAppContext ctx, [Argument, HideDefaultValue] string? project = null,  CancellationToken token = default)

@@ -13,12 +13,12 @@ public static class Formatting
 
     public static string Format(UserDefaultedProject proj)
     {
-        return $"[dim]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Id}[/] {proj.Project} ";
     }
 
     public static string Format(RpcProjectsForEmployeeeForDateResponse proj)
     {
-        return $"[dim]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Id}[/] {proj.Project} ";
     }
 
     public static string FormatOther(Employee emp)

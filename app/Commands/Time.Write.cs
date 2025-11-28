@@ -11,16 +11,16 @@ internal partial class Time
     [Command("write")]
     public async Task Write(
         ConsoleAppContext ctx,
-        [HideDefaultValue, Argument] string? project = null,
-        SelectedRange range = SelectedRange.SingleDay,
-        decimal? hours = 7.5m,
-        string? date = null,
-        bool? yes = false,
+        [HideDefaultValue] string? project = null,
+        [HideDefaultValue] SelectedRange range = SelectedRange.SingleDay,
+         [Argument] decimal? hours = 7.5m,
+         [HideDefaultValue] string? date = null,
+         [HideDefaultValue] bool? yes = false,
         CancellationToken token = default) => await WriteLogEntries(ctx, range, project, hours, date, yes, token);
 
     private const int minutesPerDay = 450;
 
-    private static async Task WriteLogEntries(ConsoleAppContext ctx,
+    private async Task WriteLogEntries(ConsoleAppContext ctx,
         SelectedRange? mode = null,
         string? project = null,
         decimal? hours = null,
@@ -56,6 +56,7 @@ internal partial class Time
         }
 
         var datesToWrite = GetDatesToWrite(mode, specificDate);
+        decimal hoursToWrite = hours ?? 7.5m;
 
         string projectToWriteOn;
         if (project != null)
@@ -67,7 +68,7 @@ internal partial class Time
             {
                 Console.MarkupLine($"[red]❌ Fant ingen prosjekt med kode '{project}'[/]");
                 var availableProjects = allProjects?
-                    .Where(p => p.Active && p.Id.StartsWith(project.ToUpper()[..2]))
+                    .Where(p => p.Active && p.Id.StartsWith(project.Length > 2 ? project.ToUpper()[..2] : project.ToUpper()))
                     .OrderByDescending(p => p.Id)
                     .Select(p => $"{p.Id} - {p.Name} ({p.Customer?.Name})")
                     .ToList();
@@ -90,14 +91,42 @@ internal partial class Time
             if (defaultProj == null)
             {
                 Console.MarkupLine("[red]❌ Ingen prosjektkode angitt og ingen default prosjekt funnet.[/]");
-                return;
+                Console.WriteLine();
+                Console.MarkupLine($"Hjelp:\n" +
+                                   $"- Angi et prosjekt med [green]`tim write -p|--project [purple]<PROSJEKTKODE>[/]`[/]\n" +
+                                   $"- Sett et default prosjekt med [green]`tim set-default [purple]<PROSJEKTKODE>[/]`[/] og rekjør [green]`tim write`[/].");
+                Console.WriteLine();
+                var chooseProject = Console.Prompt(
+                    new ConfirmationPrompt($"\nVil du sette et default-prosjekt og timeføre {hoursToWrite} på dette nå?"));
+                if (chooseProject)
+                {
+                    await SetDefault(ctx, null, cancellationToken);
+                    var newDefault = await UserSecretsManager.GetDefaultProject(cancellationToken);
+                    if (newDefault is { })
+                    {
+                        projectToWriteOn = newDefault.Id;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[red]❌ Ingen default prosjekt satt. Avbryter.[/]");
+                        return;
+                    }
+
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                projectToWriteOn = defaultProj.Id;
             }
 
-            projectToWriteOn = defaultProj.Id;
-            Console.MarkupLine($"Bruker default prosjektkode: [green]{projectToWriteOn}[/]");
+            Console.MarkupLine($"Bruker default prosjektkode: [purple]{projectToWriteOn}[/]");
         }
 
-        decimal hoursToWrite = hours ?? 7.5m;
+
 
         await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true, cancellationToken);
 
@@ -146,11 +175,7 @@ internal partial class Time
         if (loggedHoursForDayAndProject is { Minutes: > 0 } existinglog)
         {
             var minutesDiffTowardsTarget = minutesToLog - existinglog.Minutes;
-            if (minutesDiffTowardsTarget == 0)
-            {
-                Console.MarkupLine($"[grey]‍️[[SKIPPED]]{targetProjectCode} har allerede {hoursFriendlyStr}t {day:dd.MM}[/]");
-                return;
-            }
+
 
             if (totalDaysToWrite == 1 || skipConfirm)
             {

@@ -78,10 +78,19 @@ public class UserSecretsManager
         return session;
     }
 
-    public static async Task StoreDefaultProject(UserDefaultedProject value, CancellationToken token)
+    public static async Task StoreDefaultProject(UserDefaultedProject? value, CancellationToken token)
     {
+
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
-        secrets["DefaultProject"] = JsonSerializer.Serialize(value);
+        if (value is null)
+        {
+            secrets.Remove("DefaultProject");
+        }
+        else
+        {
+            secrets["DefaultProject"] = JsonSerializer.Serialize(value);
+        }
+
         var secretsJson = ToJson(secrets);
         var secretsPath = GetAppDataPath();
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
