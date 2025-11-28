@@ -89,7 +89,7 @@ internal partial class Time
 
         if (!report.IsMonthly())
         {
-            int weekNo = ISOWeek.GetWeekOfYear(dateInRange);
+            int weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
             return $"[dim] uke {weekNo}{empStr}[/]";
         }
 
@@ -322,8 +322,8 @@ internal partial class Time
             dateInWeek = dateInWeek.AddDays(-7);
         }
 
-        int year = ISOWeek.GetYear(dateInWeek);
-        int weekNo = ISOWeek.GetWeekOfYear(dateInWeek);
+        int year = ISOWeekShim.GetYear(dateInWeek);
+        int weekNo = ISOWeekShim.GetWeekOfYear(dateInWeek);
 
         var weekDaysForRange = Enumerable.Range(1, 5)
             .Select(dayOfWeek => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)dayOfWeek)))

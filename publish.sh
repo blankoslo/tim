@@ -19,6 +19,7 @@ for runtime in "${RUNTIMES[@]}"; do
 		-c Release \
 		-r "$runtime" \
 		-o "$target_dir" \
+    -f "net10.0" \
 		-p:Version="$VERSION" \
 		-p:PublishSingleFile=true \
 		-p:DebugType=embedded \
