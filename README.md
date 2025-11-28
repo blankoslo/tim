@@ -35,7 +35,7 @@ Alt 1 - _Homebrew_
 
 ```bash
 brew tap blankoslo/tools git@github.com:blankoslo/homebrew-tools.git
-brew install blankoslo/tools/tim
+brew install tim
 ```
 
 Alt 2 - Manuelt
