@@ -10,7 +10,6 @@ internal partial class Time
     /// <param name="customer">-c, Filtrer på kunde. Kundekode i Floq. Eks "ANE" for Aneo Mobility.</param>
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
-    [ConsoleAppFilter<AddStdinToContext>]
     public async Task List(ConsoleAppContext ctx,
         SelectedRange range = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
@@ -62,24 +61,17 @@ internal partial class Time
 
         var empId = employeeId ?? session.EmployeeId;
 
-        await Console.Live(table)
-            .Overflow(VerticalOverflow.Ellipsis)
-            .Cropping(VerticalOverflowCropping.Top)
-            .StartAsync(async liveCtx =>
-            {
-                var report = await CreateReport(range, dates, client, empId, customer, session, ct);
-                if (report != null)
-                {
-                    string? caption = GetCaption(report, dates, range);
-                    table.Caption = new TableTitle(caption ?? "?");
-                    table.Border = new RoundedTableBorder();
-                    RenderTableLive(table, report, liveCtx);
-                }
-                else
-                {
-                    Console.MarkupLine($"[red]❌ Kunne ikke hente rapport [/]");
-                }
-            });
+
+        var report = await CreateReport(range, dates, client, empId, customer, session, ct);
+        if (report != null)
+        {
+            string? caption = GetCaption(report, dates, range);
+            table.Caption = new TableTitle(caption ?? "?");
+            table.Border = new RoundedTableBorder();
+            RenderTableLive(table, report);
+            Console.Write(table);
+        }
+
     }
 
     private static string? GetCaption(WeeklyTimeforingReport report, DateOnly[] dates, SelectedRange? range)
@@ -197,8 +189,7 @@ internal partial class Time
     record ProjectDay(string ProjectId, DateOnly Day);
 
     private static void RenderTableLive(Table table,
-        WeeklyTimeforingReport report,
-        LiveDisplayContext liveCtx)
+        WeeklyTimeforingReport report)
     {
         if (!report.HasTimeEntries())
         {
@@ -216,10 +207,9 @@ internal partial class Time
                 c.Header = new Markup($"{day1:dd.MM}");
             });
 
-            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
                 table.AddColumn("");
 
-            liveCtx.Refresh();
         }
 
         foreach (var proj in report.Projects)
@@ -237,7 +227,6 @@ internal partial class Time
             }
 
             table.AddRow(row.ToArray());
-            liveCtx.Refresh();
         }
 
         // add a sum row here
@@ -298,7 +287,6 @@ internal partial class Time
 
 
         table.AddRow(cumulativeRow.ToArray());
-        liveCtx.Refresh();
     }
 
     private static DateOnly[] GetDatesToWrite(SelectedRange? range, DateOnly? date = null)

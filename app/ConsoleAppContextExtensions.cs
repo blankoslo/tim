@@ -25,7 +25,7 @@ internal static class ConsoleAppContextExtensions
             GlobalState? state =  (GlobalState?) ctx.State;
             if (state is null or { StdIn: null })
             {
-                throw new Exception("No lines from stdin in context. Missing [StdinArgumentBinder]?");
+                return;
             }
 
             foreach (var line in state.StdIn)

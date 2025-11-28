@@ -6,9 +6,10 @@ internal partial class Time
     /// <param name="range">-r, Hvilken uke som skal timeføres. Gyldige: "Current|Previous"</param>
     /// <param name="project">-p, Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt</param>
     /// <param name="hours">-h, Antall timer som skal føres</param>
-    /// <param name="date">-d, Dato som skal føres, MM.dd. Default dagens dato.</param>
+    /// <param name="date">-d, Dato som skal føres, dd.MM Default dagens dato.</param>
     /// <param name="yes">-y, Bare kjørr, ikke spør om bekreftelser.</param>
     [Command("write")]
+    [ConsoleAppFilter<AddStdinToContext>]
     public async Task Write(
         ConsoleAppContext ctx,
         [HideDefaultValue] string? project = null,
@@ -131,6 +132,15 @@ internal partial class Time
         await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true, cancellationToken);
 
         await ListPeriod(ctx, displayList, ct: cancellationToken);
+        if (datesToWrite.Length == 1)
+        {
+            Console.WriteLine($"Førte {hoursToWrite} på {projectToWriteOn} den {datesToWrite[0]:dd.MM} ");
+        }
+        else
+        {
+            Console.WriteLine($"Førte {hoursToWrite} på {projectToWriteOn} [{datesToWrite[0]:dd.MM}-{datesToWrite[^1]:dd.MM}] ");
+        }
+
     }
 
     private static async Task WriteEntriesForDates(string targetProjectCode, DateOnly[] datesToWrite,
