@@ -1,4 +1,9 @@
-﻿var app = ConsoleApp.Create();
+﻿using System.Globalization;
+
+CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("nb-NO");
+CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("nb-NO");
+
+var app = ConsoleApp.Create();
 app.Add("", ThisWeekOrLoginRequriredCommand);
 await app.RunAsync(args);
 
