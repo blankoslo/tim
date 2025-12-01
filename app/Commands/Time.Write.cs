@@ -178,7 +178,7 @@ internal partial class Time
             < 0 => $"{Formatting.MinutesToHours(loggedHoursForDayAndProject?.Minutes)}[green]+{Math.Abs(hoursDiff.Value):F1}[/] => {hoursFriendlyStr}",
             > 0 => $"{Formatting.MinutesToHours(loggedHoursForDayAndProject?.Minutes)}[red]-{Math.Abs(hoursDiff.Value):F1}[/] => {hoursFriendlyStr}",
             0 => $"[grey]Hadde allerede {hoursFriendlyStr} timer. Ingen endring.[/]",
-            null => $"0[green]+{hoursFriendlyStr}[/[ => {hoursFriendlyStr}"
+            null => $"0[green]+{hoursFriendlyStr}[/] => {hoursFriendlyStr}"
         };
         string log = $"[purple]{targetProjectCode}[/] [[{day:dd.MM}]]  {changeTxt}";
 
