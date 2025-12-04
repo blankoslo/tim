@@ -1,46 +1,37 @@
-# tim
+<div align="center">
 
-timeføring cli
+<img src="./images/tim.png" alt="Bit Icon" width="35%" />
 
-```terminal
-$ tim --help
-Usage: [command] [-h|--help] [--version]
+### tim - timeføring cli for Blank
+[![License: MIT](https://img.shields.io/badge/License-MIT-05bd7e.svg)](LICENSE)
+[![Terminal](https://img.shields.io/badge/interface-terminal-05bd7e.svg)](https://github.com/blankoslo/tim)
 
-Commands:
-  curl                curl '/employees?id=eq.1'
-  emp                 Hent en spesifikk ansatts detaljer
-  emp list, emp ls    Hent alle ansatte fra Floq
-  emp me              Hent mine ansatt-detaljer
-  get-default         Henter default-prosjektet ditt
-  list, ls            Lister førte timer
-  login               Logger inn via browser
-  logout              Logger deg ut lokalt
-  set-default         Setter et prosjekt som default til timeføring
-  write               Registrerer nye timer
-```
+[Features](#-features) • [Installation](#-installasjon) • [Usage](#-bruk) 
 
-![alt text](docs/images/demo-table.png)
+<img src="./images/icon.512x512.png" alt="Bit Icon" width="50px" />
+</div>
 
 
-## install
 
-1. MacOS og Linux
-2. Windows
+## ✨ Features
 
-*MacOS/Linux*
+| **Feature**                             | **Description**                                                                                |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **⏲️ Timeføring**               | Før timer for 1 dag, hele uka, eller hele måneden|
+| **🗓️ Rapporter**              | Gjennomgå timeføring for hele måneden, vise alle timer for alle et prosjekt               |
+| **🤓 Ingen browser**         | Du slipper browserens tamme klør                                      |
 
 
-Alt 1 - _Homebrew_
-
+## 🚀 Installasjon
 
 ```bash
+# Homebrew
 brew tap blankoslo/tools git@github.com:blankoslo/homebrew-tools.git
 brew install blankoslo/tools/tim
 ```
 
-Alt 2 - Manuelt
-
-Bruk filene fra [releases](https://github.com/blankoslo/tim/releases/latest). Last ned siste versjon og hiv den i en mappe som er i PATH-en din.
+Evt last ned filene fra [releases](https://github.com/blankoslo/tim/releases/latest). 
+Last ned siste versjon og hiv den i en mappe som er i PATH-en din.
 
 
 *Windows*
@@ -93,11 +84,10 @@ NB, krever en `nuget.config` m/ source "https://nuget.pkg.github.com/blankoslo/i
 </details>
 
 
-### usage
 
-🔥🔥🔥 Støtter foreløpig bare 1 stk fire-in-the-hole timeføring som sørger for at alle dager får samme antall timer på et angitt prosjekt.
+## 💻 Bruk
 
-```
+```bash
 $ tim write --help
 Usage: write [arguments...] [options...] [-h|--help] [--version]
 
@@ -109,25 +99,25 @@ Arguments:
 Options:
   -p, --project <string?>        Prosjektkoden til prosjektet. Bruker global default-prosjekt hvis ikke angitt
   -r, --range <SelectedRange>    Hvilken uke som skal timeføres. Gyldige: "Current|Previous"
-  -d, --date <string?>           Dato som skal føres, MM.dd. Default dagens dato.
+  -d, --date <string?>           Dato som skal føres, dd.MM Default dagens dato.
   -y, --yes <bool?>              Bare kjørr, ikke spør om bekreftelser.
 ```
 
 
-### Eksempler
 
-Fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke
-```
+
+```bash
+# 7.5 timer på prosjekt ANE1006 for i dag
 tim write -p ANE1006 
 ```
 
-Fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke, ved bruk av default-prosjektet
-```
-// fører 7.5 timer på prosjekt ANE1006 for alle dager i inneværende uke
+```bash
+# 7.5 timer på prosjekt ANE1006 for idag
 $ tim set-default ANE1006
 $ tim write 
 ```
 
-Fører 3.5 timer istedet for defaulten 7,5
-```
+```bash
+# 3.5 timer istedet for defaulten 7,5
 $ tim write -h 3,5
+```
