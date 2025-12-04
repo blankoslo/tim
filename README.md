@@ -113,11 +113,23 @@ tim write -p ANE1006
 
 ```bash
 # 7.5 timer på prosjekt ANE1006 for idag
-$ tim set-default ANE1006
-$ tim write 
+tim set-default ANE1006
+tim write 
 ```
 
 ```bash
 # 3.5 timer istedet for defaulten 7,5
-$ tim write -h 3,5
+tim write -h 3,5
 ```
+
+
+`tim` støtter piping:
+
+```bash
+# Hente ut ukesrapport for alle hos kunden 'Aneo Mobility'
+tim emp ls -c "Aneo Mobility"  --ids | tim ls
+```
+
+<div align="center">
+<img src="./images/WeeklyReportSample.png" width="75%" />
+</div>
