@@ -141,7 +141,7 @@ tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 
 ### Floq API tips
 
-Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne _kan_ lastes opp i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [`github.com/plutovoq`]((https://github.com/plutov/oq))q
+Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne _kan_ lastes opp i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [`github.com/plutov/oq`]((https://github.com/plutov/oq))
 
 
 ```bash
