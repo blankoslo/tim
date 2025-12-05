@@ -134,9 +134,9 @@ tim emp ls -c "Aneo Mobility"  --ids | tim ls --range PreviousMonth
 </div>
 
 
-### cURL
+# tim curl
 
-`tim cURL` er piper litt requests rett mot PostgREST APIet. 
+`tim curl` gjør requests rett mot PostgREST APIet med innloggede credentials. 
 
 ```bash
 # Hva er det dissa folka driver med egentlig?
@@ -145,11 +145,7 @@ tim curl '/employees?select=first_name,last_name&role=eq.Annet&termination_date=
 # -x POST for å kalle RPC-metoder:
 $ tim curl -x post '/rpc/employees_on_projects' \ 
  --data '{ "from_date": "2025-11-01", "to_date":"2025-11-30"}' | grep "Ruter"
- ```
 
-
-… kombinert med litt jq, så kan man da gjøre litt random greier:
-```bash
 # Finne timeføringa til alle Mags 
 tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 
@@ -170,4 +166,32 @@ tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 │ Ukesum                        │       │       │       │       │ 38,5  │
 ╰───────────────────────────────┴───────┴───────┴───────┴───────┴───────╯
                              uke 49 Davidsen       
+```
+
+### Floq API tips
+
+Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne _kan_ lastes opp i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [`github.com/plutovoq`]((https://github.com/plutov/oq))q
+
+
+```bash
+brew install plutov/tap/oq
+```
+
+
+```bash
+# last ned swagger 2.0 json
+tim curl '/' > floq-openapi.json
+# konverter til openapi 3.0 og åpne i oq
+npx swagger2openapi floq-openapi.json | oq
+```
+
+<div align="center">
+<img src="./images/oq.png" width="100%" />
+</div>
+
+
+NB Man _kan_ også gå gi direkte mot Floq-API'et, MEN obs: da vises kun RPC-metodene.
+
+```bash
+npx swagger2openapi https://api-prod.floq.no/ | oq
 ```
