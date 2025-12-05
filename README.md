@@ -145,15 +145,12 @@ Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne
 
 
 ```bash
-brew install plutov/tap/oq
+brew install plutov/tap/oq 
 ```
 
-
 ```bash
-# last ned swagger 2.0 json
-tim curl '/' > floq-openapi.json
-# konverter til openapi 3.0 og åpne i oq
-npx swagger2openapi floq-openapi.json | oq
+# Åpne Floq API i oq
+tim curl '/' | npx swagger2openapi /dev/stdin | oq
 ```
 
 <div align="center">
