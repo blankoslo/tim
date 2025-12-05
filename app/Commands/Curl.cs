@@ -57,7 +57,7 @@ internal class CurlCommand
             var responseBody = await response.Content.ReadAsStringAsync(token);
             Console.Write($"{(int)response.StatusCode} {response.ReasonPhrase}");
             Console.WriteLine();
-            Console.Write(responseBody);
+            System.Console.Write(responseBody);
             return (int) response.StatusCode;
         }
     }
