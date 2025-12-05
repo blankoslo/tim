@@ -243,12 +243,14 @@ public record UserSession(string Name, string Email, string AccessToken, int Emp
         get
         {
             var span = CalcExpireIn;
-            return span.TotalMinutes switch
+            var prefix = span.TotalMinutes < 0 ? "For " : "Om " ;
+            var postfix = span.TotalMinutes < 0 ? " siden" : "";
+            return Math.Abs(span.TotalMinutes) switch
             {
-                >= 1440 => $"{(int)span.TotalDays}d {(int)(span.TotalHours % 24)}h",
-                >= 60 => $"{(int)span.TotalHours}h {span.Minutes}m",
-                >= 1 => $"{(int)span.TotalMinutes}m {span.Seconds}s",
-                _ => $"{(int)span.TotalSeconds}s"
+                >= 1440 => $"{prefix}{(int)Math.Abs(span.TotalDays)}d {(int)(Math.Abs(span.TotalHours) % 24)}h{postfix}",
+                >= 60 => $"{prefix}{(int)Math.Abs(span.TotalHours)}h {Math.Abs(span.Minutes)}m{postfix}" ,
+                >= 1 => $"{prefix}{(int)Math.Abs(span.TotalMinutes)}m {Math.Abs(span.Seconds)}s{postfix}",
+                _ => $"{prefix}{(int)Math.Abs(span.TotalSeconds)}s{postfix}"
             };
         }
     }

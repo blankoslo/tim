@@ -5,8 +5,7 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
         var session = await UserSecretsManager.GetFloqSession(cancellationToken);
         if (session is { IsExpired: false })
         {
-            var existingState = context.State as GlobalState;
-            if (existingState is { })
+            if (context.State is GlobalState { } existingState)
             {
                 // Console.WriteLine("[auth] adding global state with session");
                 GlobalState newState = existingState with { Session = session };
