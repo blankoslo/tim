@@ -78,56 +78,27 @@ Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/late
 ## 💻 Bruk
 
 ```bash
-$ tim write --help
-Usage: write [arguments...] [options...] [-h|--help] [--version]
-
-Registrerer nye timer
-
-Arguments:
-  [0] <decimal?>    Antall timer som skal føres
-
-Options:
-  -p, --project <string?>        Prosjektkoden til prosjektet. Bruker default-prosjekt hvis ikke angitt.
-  -r, --range <SelectedRange>    Valgfritt. Fører hele uka i en go.
-  -d, --date <string?>           Dato som skal føres, dd.MM  Default dagens dato.
-  -y, --yes <bool?>              Bare kjørr, ikke spør om bekreftelser eller annet mas.
-```
-
-
-
-
-```bash
 # 7.5 timer på prosjekt ANE1006 for i dag
 tim write -p ANE1006 
-```
 
-```bash
-# 7.5 timer på prosjekt ANE1006 for idag
+# 7.5 timer på default-prosjekt for i dag
 tim set-default ANE1006
 tim write 
-```
 
-```bash
-# 3.5 timer istedet for defaulten 7,5
-tim write -h 3,5
-```
+# 3.5 timer istedet for defaulten 7,5, idag
+tim write 3,5
 
-
-`tim` støtter piping:
-
-```bash
 # Hente ut ukesrapport for alle hos kunden 'Aneo Mobility'
-tim emp ls -c "Aneo Mobility"  --ids | tim ls
+tim emp ls -c "Aneo Mobility" --ids | tim ls
+
+# Hente ut månedsrapport for alle hos kunden 'Aneo Mobility' for forrige måned
+tim emp ls -c "Aneo Mobility" --ids | tim ls --range PreviousMonth
 ```
 
 <div align="center">
-<img src="./images/WeeklyReportSample.png" width="75%" />
+<img src="./images/WeeklyReportSample.png" width="100%" />
 </div>
 
-```bash
-# Hente ut månedsrapport for alle hos kunden 'Aneo Mobility' for forrige måned
-tim emp ls -c "Aneo Mobility"  --ids | tim ls --range PreviousMonth
-```
 
 <div align="center">
 <img src="./images/MonthlyReportSample.png" width="100%" />
