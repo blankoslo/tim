@@ -67,6 +67,25 @@ public class FloqClient(HttpClient client)
     {
         return await client.GetFromJsonAsync<IEnumerable<GetAllProjectsIncludeCustomer>>("/projects?select=id,name,active,billable,customer(id,name)");
     }
+
+    public async Task<bool> AddPaidOvertime(PaidOvertimeRequest request, CancellationToken token)
+    {
+        var res = await client.PostAsJsonAsync("/paid_overtime", request, JsonSerializerOptions.Web, token);
+        return res.IsSuccessStatusCode;
+    }
+
+    public async Task<IEnumerable<PaidOvertimeResponse>> GetPaidOvertime(int employeeId, CancellationToken token)
+    {
+        var res = await client.GetFromJsonAsync<IEnumerable<PaidOvertimeResponse>>(
+            $"/paid_overtime?employee=eq.{employeeId}&order=paid_date.desc", token);
+        return res ?? [];
+    }
+
+    public async Task<bool> DeletePaidOvertime(int id, CancellationToken token)
+    {
+        var res = await client.DeleteAsync($"/paid_overtime?id=eq.{id}", token);
+        return res.IsSuccessStatusCode;
+    }
 }
 
 public record GetAllProjectsIncludeCustomer(string Id, string Name, bool Active, string Billable, GetAllProjectCustomer Customer);
@@ -158,3 +177,9 @@ public enum TodayType
 }
 
 public record TimeEntryRequest(int creator, DateOnly date, int employee, int minutes, string project);
+
+public record PaidOvertimeRequest(int employee, int minutes, string comment);
+
+public record PaidOvertimePatchRequest(string? paid_date);
+
+public record PaidOvertimeResponse(int Id, int Employee, DateOnly? Paid_Date, int Minutes, string? Comment, DateOnly? Registered_Date);

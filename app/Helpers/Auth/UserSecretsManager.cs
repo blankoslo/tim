@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration.UserSecrets;
@@ -33,7 +34,7 @@ public class UserSecretsManager
 
         secrets["Floq:AccessToken"] = data.AccessToken;
         secrets["Floq:RefreshToken"] = data.RefreshToken;
-        secrets["Floq:ExpiresAt"] = DateTime.Parse(data.ExpireDate).ToString("O");
+        secrets["Floq:ExpiresAt"] = data.ExpireDate;
         secrets["Floq:Email"] = data.UserEmail;
 
         if (employee != null)
@@ -72,7 +73,8 @@ public class UserSecretsManager
             throw new Exception("Logg inn på nytt");
         }
 
-        var session = new UserSession(empName, secrets["Floq:Email"], accessToken, int.Parse(empId), DateTime.Parse(secrets["Floq:ExpiresAt"]));
+        DateTime dateTimeInUtc = DateTime.Parse(secrets["Floq:ExpiresAt"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        var session = new UserSession(empName, secrets["Floq:Email"], accessToken, int.Parse(empId), dateTimeInUtc);
 
 
         return session;
@@ -136,7 +138,7 @@ public class UserSecretsManager
 
         var (name, email) = JwtHelper.Decode(idToken);
         var dateTimestr = secrets["Google:ExpiresAt"];
-        var expiryUtc = DateTime.Parse(dateTimestr);
+        var expiryUtc = DateTimeOffset.Parse(dateTimestr, CultureInfo.InvariantCulture).UtcDateTime;
         var googleToken = secrets["Google:AccessToken"];
 
         // empFetch not implemented for Google, deprecated
@@ -234,6 +236,22 @@ public class UserSecretsManager
 public record UserSession(string Name, string Email, string AccessToken, int EmployeeId, DateTime ExpiresAtUtc)
 {
     public bool IsExpired => DateTime.UtcNow >= ExpiresAtUtc;
+    private TimeSpan CalcExpireIn => ExpiresAtUtc - DateTime.UtcNow;
+
+    public string ExpireInFriendly
+    {
+        get
+        {
+            var span = CalcExpireIn;
+            return span.TotalMinutes switch
+            {
+                >= 1440 => $"{(int)span.TotalDays}d {(int)(span.TotalHours % 24)}h",
+                >= 60 => $"{(int)span.TotalHours}h {span.Minutes}m",
+                >= 1 => $"{(int)span.TotalMinutes}m {span.Seconds}s",
+                _ => $"{(int)span.TotalSeconds}s"
+            };
+        }
+    }
 }
 
 public record UserDefaultedProject(string Id, string Project, string Customer);
