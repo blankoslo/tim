@@ -49,13 +49,15 @@ internal class CurlCommand
         if (response.IsSuccessStatusCode)
         {
             var responseBody = await response.Content.ReadAsStringAsync(token);
-            Console.WriteLine($"{responseBody}");
+            System.Console.Write(responseBody);
             return 0;
         }
         else
         {
             var responseBody = await response.Content.ReadAsStringAsync(token);
-            Console.WriteLine($"{(int)response.StatusCode} {response.ReasonPhrase}\n{responseBody}");
+            Console.Write($"{(int)response.StatusCode} {response.ReasonPhrase}");
+            Console.WriteLine();
+            Console.Write(responseBody);
             return (int) response.StatusCode;
         }
     }
