@@ -36,6 +36,12 @@ internal partial class Time
             });
         }
 
+        if (System.Console.IsInputRedirected && !employeeIds.Any())
+        {
+            Console.Markup("[red]ERR![/] stdin må være rene tall (int)");
+            return;
+        }
+
         // 2) If no piped input, use employeeId argument or fallback to logged-in
         if (!employeeIds.Any())
         {
@@ -46,49 +52,69 @@ internal partial class Time
         }
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
-        foreach (var id in employeeIds)
+        foreach (var empId in employeeIds)
         {
-            await ProcessEmployee(range, id, customer, ct, session, client);
+            if (employeeIds.Count > 1)
+            {
+                Console.WriteLine();
+            }
+
+            await ProcessEmployee(range, empId, customer, ct, session, client, employeeIds.Count > 1);
+
+            if (employeeIds.Count > 1)
+            {
+                Console.WriteLine();
+            }
         }
     }
 
-    private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer, CancellationToken ct,
-        UserSession session, FloqClient client)
+    private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer,
+        CancellationToken ct,
+        UserSession session, FloqClient client, bool multipleEmployeeOutput)
     {
         var dates = GetDatesToWrite(range);
-
-        Table table = new();
-
         var empId = employeeId ?? session.EmployeeId;
 
-
-        var report = await CreateReport(range, dates, client, empId, customer, session, ct);
-        if (report != null)
+        var report = await CreateReport(range, dates, client, empId, customer, ct);
+        if (report != null && report.HasTimeEntries())
         {
-            string? caption = GetCaption(report, dates, range);
-            table.Caption = new TableTitle(caption ?? "?");
-            table.Border = new RoundedTableBorder();
+            Table table = new();
+            string? caption = GetCaption(report, dates, session, multipleEmployeeOutput);
+            table.Caption = new TableTitle(caption ?? "?", style: new Style(foreground: Color.FromHex("#58C6FF")));
+            table.Border = TableBorder.SimpleHeavy;
             RenderTableLive(table, report);
             Console.Write(table);
         }
+        else
+        {
+            var employee = await client.GetEmployee(empId, ct);
+            var empStr = employee is not null ? Formatting.FormatOther(employee) : empId.ToString();
+            Console.MarkupLine($"[red]Ikke bemannet[/],  {empStr}");
+        }
 
     }
 
-    private static string? GetCaption(WeeklyTimeforingReport report, DateOnly[] dates, SelectedRange? range)
+    private static string? GetCaption(WeeklyTimeforingReport report, DateOnly[] dates, UserSession session,
+        bool multipleEmployeeOutput)
     {
-        var empStr = report.Employee != null ?  $" [blue]{report.Employee.Last_Name}[/]": "";
+        var empStr = $" – {report.Employee.First_Name} {report.Employee.Last_Name}";
+        if (session.EmployeeId == report.Employee.Id && !multipleEmployeeOutput)
+        {
+            empStr = "";
+        }
+
         var dateInRange = dates.First();
 
         if (!report.IsMonthly())
         {
             int weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
-            return $"[dim] uke {weekNo}{empStr}[/]";
+            return $"Uke {weekNo}{empStr}";
         }
 
         if (report.IsMonthly())
         {
             var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(dateInRange.Month);
-            return $"[dim] {monthName} {dateInRange.Year}{empStr}[/]";
+            return $"{monthName} {dateInRange.Year}{empStr}";
         }
 
         return null;
@@ -98,14 +124,12 @@ internal partial class Time
         FloqClient client,
         int employeeId,
         string? customer,
-        UserSession session,
         CancellationToken ct)
     {
-        var sessionEmployeeId = session.EmployeeId;
-        Employee? emp = null;
-        if (sessionEmployeeId != employeeId)
+        Employee? emp = await client.GetEmployee(employeeId, ct);
+        if (emp is null)
         {
-            emp = await client.GetEmployee(employeeId, ct);
+            return null;
         }
 
         Dictionary<DateOnly, Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
@@ -144,8 +168,12 @@ internal partial class Time
         {
             foreach (var day in dates)
             {
-                var minutes = entriesByDay[day].Where(e => e.Id == project.Id).Sum(e => e.Minutes);
-                timerPrProsjekt.Add(new ProjectDay(project.Id, day), new Timeforing(day, minutes));
+                var projectEntriesOnDay = entriesByDay[day].FirstOrDefault(e => e.Id == project.Id);
+
+                timerPrProsjekt.Add(new ProjectDay(project.Id, day),
+                    projectEntriesOnDay is not null
+                        ? new Timeforing(day, projectEntriesOnDay.Minutes, projectEntriesOnDay.Percentage_Staffed)
+                        : new Timeforing(day, 0, 0));
             }
         }
 
@@ -153,11 +181,11 @@ internal partial class Time
         return report;
     }
 
-    record WeeklyTimeforingReport(SelectedRange Range, DateOnly[] Days, List<Project> Projects, Dictionary<ProjectDay, Timeforing> ProjectTimeforing, Employee? Employee)
+    record WeeklyTimeforingReport(SelectedRange Range, DateOnly[] Days, List<Project> Projects, Dictionary<ProjectDay, Timeforing> ProjectTimeforing, Employee Employee)
     {
         public bool HasTimeEntries() => ProjectTimeforing.Any();
 
-        public Timeforing? GetEntry(ProjectDay proj)
+        public Timeforing GetEntry(ProjectDay proj)
         {
             return ProjectTimeforing[proj];
         }
@@ -179,7 +207,7 @@ internal partial class Time
         }
     }
 
-    record Timeforing(DateOnly Day, int Minutes);
+    record Timeforing(DateOnly Day, int Minutes, int PercentageStaffed);
 
     record Project(string Id, string Name);
 
@@ -188,13 +216,11 @@ internal partial class Time
     private static void RenderTableLive(Table table,
         WeeklyTimeforingReport report)
     {
-        if (!report.HasTimeEntries())
-        {
-            Console.MarkupLine("[red]\nIngen prosjekter satt opp for timeføring funnet for denne uka[/]");
-            return;
-        }
 
         table.AddColumn("");
+
+        table.Columns[0].Width(30);
+
         foreach (var day in report.Days)
         {
             var day1 = day;
@@ -215,9 +241,14 @@ internal partial class Time
             foreach (DateOnly day in report.Days)
             {
                 var entry = report.GetEntry(new ProjectDay(proj.Id, day));
-                row.Add(entry is { Minutes: > 0 }
-                    ? $"[white]{Formatting.MinutesToHours(entry.Minutes)}[/]"
-                    : "[dim]-[/]");
+                string item = (proj.Id, entry) switch
+                    {
+                        (_, { Minutes: > 0}) => $"[white]{Formatting.MinutesToHours(entry.Minutes)}[/]",
+                        ("AVS",{ PercentageStaffed: > 0 }) => $"[purple]A[/]",
+                        ("FER1000",{ PercentageStaffed: > 0 }) => $"[purple]F[/]",
+                        _ => "[dim]-[/]"
+                    };
+                row.Add(item);
 
                 if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
                     row.Add("");

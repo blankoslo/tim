@@ -3,6 +3,8 @@ using System.Text.Json;
 
 public class FloqClient(HttpClient client)
 {
+    private Dictionary<int, Employee> empMap = new();
+
     public async Task<IEnumerable<Employee>> GetEmployees(CancellationToken token)
     {
         var res = await client.GetFromJsonAsync<IEnumerable<Employee>>("/employees", token);
@@ -12,8 +14,18 @@ public class FloqClient(HttpClient client)
 
     public async Task<Employee?> GetEmployee(int employeeId, CancellationToken token)
     {
-        var res = await client.GetFromJsonAsync<IEnumerable<Employee>>($"/employees?select=*&id=eq.{employeeId}", token);
-        return res?.FirstOrDefault();
+        if(empMap.TryGetValue(employeeId, out Employee? employee))
+        {
+            return employee;
+        }
+
+        if (empMap.Keys.Count == 0)
+        {
+            var all = await GetEmployees(token);
+            empMap = all.ToDictionary(e => e.Id, e => e);
+        }
+
+        return empMap[employeeId];
     }
 
     public async Task<Employee?> GetEmployeeByEmail(string email, CancellationToken token)
@@ -92,7 +104,7 @@ public record GetAllProjectsIncludeCustomer(string Id, string Name, bool Active,
 
 public record GetAllProjectCustomer(string Id, string Name);
 
-public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int PercentageStaffed);
+public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int Percentage_Staffed);
 public record RpcEmployeesOnProjectsResponse(string Customer_Id, string Customer_Name, string First_Name, string Last_Name, int Id, string Emoji);
 
 
