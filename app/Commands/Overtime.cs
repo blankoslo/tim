@@ -96,7 +96,6 @@ internal class Overtime
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
 
-        // Fetch the entry to verify it exists and belongs to user
         var entries = await client.GetPaidOvertime(session.EmployeeId, token);
         var entry = entries.FirstOrDefault(e => e.Id == id);
 

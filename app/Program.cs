@@ -38,8 +38,6 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
         return;
     }
 
-    // no-session, show welcome message:
-
     Console.Write(
         new FigletText("tim")
             .Color(Color.Purple));

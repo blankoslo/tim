@@ -208,7 +208,6 @@ public class UserSecretsManager
             return null;
         }
 
-        // Store the new tokens
         var secretsPath = GetAppDataPath();
         Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
 
@@ -220,7 +219,6 @@ public class UserSecretsManager
         var secretsJson = ToJson(secrets);
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
 
-        // Re-read the full session to return
         return await GetFloqSession(token);
     }
 

@@ -23,7 +23,6 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
             }
             else
             {
-                // Console.WriteLine("[auth] no existing state found, creating one (filter is first");
                 await Next.InvokeAsync(context with { State = new GlobalState(session)}, cancellationToken);
             }
         }

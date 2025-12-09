@@ -87,7 +87,6 @@ internal partial class Time
         }
         else
         {
-            // fetch default project:
             var defaultProj = await UserSecretsManager.GetDefaultProject(cancellationToken);
             if (defaultProj == null)
             {

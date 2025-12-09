@@ -101,7 +101,6 @@ internal partial class Time
         UserSession session,
         CancellationToken ct)
     {
-        // Fetch all logged hours for each day
         var sessionEmployeeId = session.EmployeeId;
         Employee? emp = null;
         if (sessionEmployeeId != employeeId)
@@ -116,9 +115,8 @@ internal partial class Time
             allTasks.Add(singleDay, t);
         }
 
-        var allTimeEntriesThisWeek = await Task.WhenAll(allTasks.Values);
+        await Task.WhenAll(allTasks.Values);
 
-        // Build a dictionary: day -> entries
         Dictionary<DateOnly, IEnumerable<RpcProjectsForEmployeeeForDateResponse>> entriesByDay = new();
         foreach (var kvp in allTasks)
         {
@@ -133,7 +131,6 @@ internal partial class Time
             }
         }
 
-        // Build a dictionary: projectId -> project info
         List<Project> projects = entriesByDay.SelectMany(kvp => kvp.Value)
             .GroupBy(p => p.Id)
             .Select(g => g.First())
@@ -229,7 +226,6 @@ internal partial class Time
             table.AddRow(row.ToArray());
         }
 
-        // add a sum row here
         List<string> sumRow = new() { "[]Daglig sum[/]" };
         var dailyTotals = new Dictionary<DateOnly, decimal>();
 
@@ -254,8 +250,6 @@ internal partial class Time
 
         table.AddRow(sumRow.ToArray());
 
-
-        // add a cumulative sum row with running totals
         List<string> cumulativeRow = new() { "[dim]Ukesum[/]" };
         decimal runningTotal = 0;
         foreach (var day in  report.Days)
