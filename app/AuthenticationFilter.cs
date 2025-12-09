@@ -6,7 +6,12 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
 
         if (session is { IsExpired: true })
         {
-            session = await UserSecretsManager.RefreshFloqSession(session.RefreshToken, cancellationToken);
+            session = await UserSecretsManager.RefreshFloqSession(cancellationToken);
+            if (session is not { IsExpired: false })
+            {
+                Console.MarkupLine("[red]Failed.[/] Logg inn på ny med [green]`tim login`[/] :/");
+                return;
+            }
         }
 
         if (session is { IsExpired: false })
@@ -24,7 +29,7 @@ internal class AuthenticationFilter(ConsoleAppFilter next) : ConsoleAppFilter(ne
         }
         else
         {
-            Console.MarkupLine("[red]Login required.[/]");
+            Console.MarkupLine("[red]Plz login.[/]");
         }
     }
 }

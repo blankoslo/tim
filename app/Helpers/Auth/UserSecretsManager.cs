@@ -4,33 +4,14 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration.UserSecrets;
+
 public class UserSecretsManager
 {
     private static readonly HttpClient AuthClient = new()
     {
         BaseAddress = new Uri("https://inni.blank.no"),
+        Timeout = TimeSpan.FromSeconds(10)
     };
-
-    public static async Task WriteCodeExchange(GoogleCodeExchange exchange, CancellationToken token)
-    {
-        var secretsPath = GetAppDataPath();
-        Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
-        var decoded = JwtHelper.Decode(exchange.IdToken);
-
-        // Read existing secrets to preserve other fields (upsert operation)
-        var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
-
-        // Update only Google-related fields
-        secrets["Google:AccessToken"] = exchange.AccessToken;
-        secrets["Google:RefreshToken"] = exchange.RefreshToken;
-        secrets["Google:IdToken"] = exchange.IdToken;
-        secrets["Google:ExpiresAt"] = exchange.ExpiresAt.ToString("O");
-        secrets["Google:Name"] = decoded.Name;
-        secrets["Google:Email"] = decoded.Email;
-
-        var secretsJson = ToJson(secrets);
-        await File.WriteAllTextAsync(secretsPath, secretsJson, token);
-    }
 
     public static async Task WriteImplicitData(ImplicitCallbackData data, Employee? employee, CancellationToken token)
     {
@@ -134,30 +115,6 @@ public class UserSecretsManager
         }
     }
 
-    public static async Task<UserSession?> GetGoogleSession(CancellationToken token)
-    {
-        var secrets = await ReadAsDictionary(token);
-        if (secrets == null)
-        {
-            return null;
-        }
-
-
-        if (!secrets.TryGetValue("Google:IdToken", out var idToken) || string.IsNullOrEmpty(idToken))
-        {
-            return null;
-        }
-
-        var (name, email) = JwtHelper.Decode(idToken);
-        var dateTimestr = secrets["Google:ExpiresAt"];
-        var expiryUtc = DateTimeOffset.Parse(dateTimestr, CultureInfo.InvariantCulture).UtcDateTime;
-        var googleToken = secrets["Google:AccessToken"];
-
-        // empFetch not implemented for Google, deprecated
-        throw new NotImplementedException("Implement emp fetch here");
-        //return new UserSession(name, email, googleToken, empId, expiryUtc);
-    }
-
     private static async Task<Dictionary<string, string>?> ReadAsDictionary(CancellationToken token)
     {
         var secretsJson = await ReadJson(token);
@@ -224,15 +181,24 @@ public class UserSecretsManager
             .Replace("\t", "\\t");
     }
 
-    public static async Task<UserSession?> RefreshFloqSession(string refreshToken, CancellationToken token)
+    public static async Task<UserSession?> RefreshFloqSession(CancellationToken token)
     {
         Console.WriteLine("Refreshing session");
-        var payload = new { refresh_token = refreshToken };
-        var response = await AuthClient.PostAsJsonAsync("/login/oauth/refresh", payload, token);
+        var currentSession = await GetFloqSession(token);
+        if (currentSession is null or { RefreshToken: null })
+        {
+            Console.WriteLine("No refresh token available to refresh. Login required.");
+            return null;
+        }
+
+        var response = await AuthClient.PostAsJsonAsync("/login/oauth/refresh", new
+            {
+                refresh_token = currentSession.RefreshToken
+            }, token);
 
         if (!response.IsSuccessStatusCode)
         {
-            Console.WriteLine("unable to refresh session");
+            Console.WriteLine("Unable to refresh session");
             return null;
         }
 
@@ -297,7 +263,7 @@ public record UserSession(string Name, string Email, string AccessToken, string 
             var postfix = span.TotalMinutes < 0 ? " siden" : "";
             return Math.Abs(span.TotalMinutes) switch
             {
-                >= 1440 => $"{prefix}{(int)Math.Abs(span.TotalDays)}d {(int)(Math.Abs(span.TotalHours) % 24)}h{postfix}",
+                >= 60 * 24 => $"{prefix}{(int)Math.Abs(span.TotalDays)}d {(int)(Math.Abs(span.TotalHours) % 24)}h{postfix}",
                 >= 60 => $"{prefix}{(int)Math.Abs(span.TotalHours)}h {Math.Abs(span.Minutes)}m{postfix}" ,
                 >= 1 => $"{prefix}{(int)Math.Abs(span.TotalMinutes)}m {Math.Abs(span.Seconds)}s{postfix}",
                 _ => $"{prefix}{(int)Math.Abs(span.TotalSeconds)}s{postfix}"
@@ -307,3 +273,6 @@ public record UserSession(string Name, string Email, string AccessToken, string 
 }
 
 public record UserDefaultedProject(string Id, string Project, string Customer);
+
+public record ImplicitCallbackData(string AccessToken, string ExpireDate, string RefreshToken, string UserEmail);
+

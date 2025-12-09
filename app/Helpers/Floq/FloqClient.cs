@@ -68,7 +68,7 @@ public class FloqClient(HttpClient client)
         return await client.GetFromJsonAsync<IEnumerable<GetAllProjectsIncludeCustomer>>("/projects?select=id,name,active,billable,customer(id,name)");
     }
 
-    public async Task<bool> AddPaidOvertime(PaidOvertimeRequest request, CancellationToken token)
+    public async Task<bool> PostPaidOvertime(PaidOvertimeRequest request, CancellationToken token)
     {
         var res = await client.PostAsJsonAsync("/paid_overtime", request, JsonSerializerOptions.Web, token);
         return res.IsSuccessStatusCode;

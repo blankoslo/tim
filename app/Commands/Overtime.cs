@@ -4,7 +4,7 @@
 [ConsoleAppFilter<AddStdinToContext>]
 internal class Overtime
 {
-    /// <summary>Registrer overtidstimer for utbetaling</summary>
+    /// <summary>Registrer overtidstimer</summary>
     /// <param name="hours">Antall timer overtid</param>
     /// <param name="comment">Beskrivelse av overtidsarbeidet</param>
     [Command("")]
@@ -25,7 +25,7 @@ internal class Overtime
             comment: comment
         );
 
-        var success = await client.AddPaidOvertime(request, token);
+        var success = await client.PostPaidOvertime(request, token);
 
         if (success)
         {
@@ -39,7 +39,7 @@ internal class Overtime
     }
 
     /// <summary>List dine registrerte overtidstimer</summary>
-    [Command("list|ls")]
+    [Command("list|overtime ls")]
     public async Task List(
         ConsoleAppContext ctx,
         CancellationToken token = default)
@@ -85,9 +85,9 @@ internal class Overtime
         Console.Write(table);
     }
 
-    /// <summary>Slett en uutbetalt overtidsregistrering</summary>
+    /// <summary>Slett en overtidsregistrering</summary>
     /// <param name="id">ID til overtidsregistreringen som skal slettes</param>
-    [Command("delete|rm")]
+    [Command("delete|overtime rm")]
     public async Task Delete(
         ConsoleAppContext ctx,
         [Argument] int id,

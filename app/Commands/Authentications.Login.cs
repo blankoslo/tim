@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 internal partial class Authentications
 {
@@ -9,6 +10,13 @@ internal partial class Authentications
     public async Task Login(ConsoleAppContext ctx, CancellationToken token = default)
     {
         await LoginImpl(token);
+    }
+
+    [Command("refresh")]
+    [Hidden]
+    public async Task Refresh(ConsoleAppContext ctx, CancellationToken token = default)
+    {
+        await UserSecretsManager.RefreshFloqSession(token);
     }
 
     public static async Task LoginImpl(CancellationToken token)
@@ -29,7 +37,7 @@ internal partial class Authentications
                 var callback = await http.GetContextAsync().WaitAsync(token);
                 ctx1.Status = "Callback mottatt!";
 
-                var data = await GoogleOAuthHelpers.HandleImplicitFlowCallback(callback, token);
+                var data = await HandleImplicitFlowCallback(callback, token);
                 if (data == null)
                 {
                     ctx1.Status = ":/";
@@ -68,5 +76,34 @@ internal partial class Authentications
             listener.Stop();
         }
         return port;
+    }
+
+    private static async Task<ImplicitCallbackData?> HandleImplicitFlowCallback(HttpListenerContext context, CancellationToken token)
+    {
+        var query = context.Request.QueryString;
+
+        var html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.SuccessInnerHtml);
+
+        if (query["error"] != null)
+        {
+            html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.ErrorInnerHtml);
+        }
+
+        var buffer = Encoding.UTF8.GetBytes(html);
+        await context.Response.OutputStream.WriteAsync(buffer, token);
+        context.Response.OutputStream.Close();
+
+        var accessToken = query["access_token"];
+        var expiryDate = query["expiry_date"];
+        var refreshToken = query["refresh_token"];
+        var userEmail = query["user_email"];
+        ImplicitCallbackData? data = null;
+
+        if (accessToken is not null && expiryDate is not null && refreshToken is not null && userEmail is not null)
+        {
+            data = new ImplicitCallbackData(accessToken, expiryDate, refreshToken, userEmail);
+        }
+
+        return data;
     }
 }
