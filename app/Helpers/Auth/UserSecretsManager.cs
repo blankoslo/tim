@@ -1,9 +1,16 @@
 using System.Globalization;
+using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration.UserSecrets;
 public class UserSecretsManager
 {
+    private static readonly HttpClient AuthClient = new()
+    {
+        BaseAddress = new Uri("https://inni.blank.no"),
+    };
+
     public static async Task WriteCodeExchange(GoogleCodeExchange exchange, CancellationToken token)
     {
         var secretsPath = GetAppDataPath();
@@ -73,8 +80,13 @@ public class UserSecretsManager
             throw new Exception("Logg inn på nytt");
         }
 
+        if (!secrets.TryGetValue("Floq:RefreshToken", out var refreshToken) || string.IsNullOrEmpty(refreshToken))
+        {
+            throw new Exception("Logg inn på nytt");
+        }
+
         DateTime dateTimeInUtc = DateTime.Parse(secrets["Floq:ExpiresAt"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-        var session = new UserSession(empName, secrets["Floq:Email"], accessToken, int.Parse(empId), dateTimeInUtc);
+        var session = new UserSession(empName, secrets["Floq:Email"], accessToken, refreshToken, int.Parse(empId), dateTimeInUtc);
 
 
         return session;
@@ -212,6 +224,44 @@ public class UserSecretsManager
             .Replace("\t", "\\t");
     }
 
+    public static async Task<UserSession?> RefreshFloqSession(string refreshToken, CancellationToken token)
+    {
+        Console.WriteLine("Refreshing session");
+        var payload = new { refresh_token = refreshToken };
+        var response = await AuthClient.PostAsJsonAsync("/login/oauth/refresh", payload, token);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("unable to refresh session");
+            return null;
+        }
+
+        var refreshResponse = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(token);
+        if (refreshResponse == null)
+        {
+            return null;
+        }
+
+        // Store the new tokens
+        var secretsPath = GetAppDataPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
+
+        var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
+
+        secrets["Floq:AccessToken"] = refreshResponse.AccessToken;
+        secrets["Floq:ExpiresAt"] = refreshResponse.ExpiryDate;
+
+        var secretsJson = ToJson(secrets);
+        await File.WriteAllTextAsync(secretsPath, secretsJson, token);
+
+        // Re-read the full session to return
+        return await GetFloqSession(token);
+    }
+
+    private record RefreshTokenResponse(
+        [property: JsonPropertyName("access_token")] string AccessToken,
+        [property: JsonPropertyName("expiry_date")] string ExpiryDate);
+
     public static async Task RemoveFloqSession(CancellationToken token)
     {
         var secretsPath = GetAppDataPath();
@@ -233,7 +283,7 @@ public class UserSecretsManager
     }
 }
 
-public record UserSession(string Name, string Email, string AccessToken, int EmployeeId, DateTime ExpiresAtUtc)
+public record UserSession(string Name, string Email, string AccessToken, string RefreshToken, int EmployeeId, DateTime ExpiresAtUtc)
 {
     public bool IsExpired => DateTime.UtcNow >= ExpiresAtUtc;
     private TimeSpan CalcExpireIn => ExpiresAtUtc - DateTime.UtcNow;

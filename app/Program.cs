@@ -24,7 +24,7 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
     if (session is { IsExpired: true })
     {
         Console.MarkupLine($"[red] Sesjon utløpt.[/] Vennligst logg inn på nytt med [green]`tim login`.[/]");
-        return;
+        session = await UserSecretsManager.RefreshFloqSession(session.RefreshToken, token);
     }
 
     if (session is { IsExpired: false })
