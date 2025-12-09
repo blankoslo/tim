@@ -2,7 +2,6 @@ using System.Globalization;
 
 public static class Formatting
 {
-    // 450 => 7.5
     public static string MinutesToHours(int? projectLogMinutes)
     {
         if (projectLogMinutes == null)
