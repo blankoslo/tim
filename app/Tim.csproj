@@ -61,7 +61,7 @@
     <Compile Update="Commands\Authentications.WhoAmI.cs">
       <DependentUpon>Authentications.cs</DependentUpon>
     </Compile>
-    <Compile Update="Commands\Projects.List.cs">
+    <Compile Update="Commands\Projects.Time.cs">
       <DependentUpon>Projects.cs</DependentUpon>
     </Compile>
     <Compile Update="Commands\Emp.List.cs">

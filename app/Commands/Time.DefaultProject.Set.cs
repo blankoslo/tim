@@ -66,7 +66,7 @@ internal partial class Time
 
             var selectedProject = projectChoices[choices.IndexOf(selected)];
             MarkupLine($"{Formatting.Format(selectedProject)}");
-            await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name, selectedProject.Id), token);
+            await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name, selectedProject.Customer.Id), token);
         }
     }
 
