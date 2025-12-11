@@ -27,7 +27,7 @@ internal partial class Time
         decimal? hours = null,
         string? userDefinedDateStr = null,
         bool? skipConfirmations = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
         SelectedRange displayList = mode switch
@@ -36,7 +36,7 @@ internal partial class Time
             null => SelectedRange.CurrentWeek,
             _ => mode.Value
         };
-        await ListPeriod(ctx, displayList, ct: cancellationToken);
+        await ListPeriod(ctx, displayList, ct: token);
 
         var currentYear = DateTime.UtcNow.Year;
 
@@ -63,7 +63,7 @@ internal partial class Time
         if (project != null)
         {
             var client = HttpClientFactory.CreateFloqClientForUser(session);
-            var allProjects = await client.GetAllProjectsWithCustomer();
+            var allProjects = await client.GetAllProjectsWithCustomer(token);
             var projectExists = allProjects?.Any(p => string.Compare(p.Id,  project, StringComparison.CurrentCultureIgnoreCase) == 0);
             if (projectExists is false)
             {
@@ -87,7 +87,7 @@ internal partial class Time
         }
         else
         {
-            var defaultProj = await UserSecretsManager.GetDefaultProject(cancellationToken);
+            var defaultProj = await UserSecretsManager.GetDefaultProject(token);
             if (defaultProj == null)
             {
                 Console.MarkupLine("[red]❌ Ingen prosjektkode angitt og ingen default prosjekt funnet.[/]");
@@ -100,9 +100,9 @@ internal partial class Time
                     new ConfirmationPrompt($"\nVil du sette et default-prosjekt og timeføre {hoursToWrite} på dette nå?"));
                 if (chooseProject)
                 {
-                    await SetDefault(ctx, null, cancellationToken);
-                    var newDefault = await UserSecretsManager.GetDefaultProject(cancellationToken);
-                    if (newDefault is { })
+                    await SetDefault(ctx, null, token);
+                    var newDefault = await UserSecretsManager.GetDefaultProject(token);
+                    if (newDefault is not null)
                     {
                         projectToWriteOn = newDefault.Id;
                     }
@@ -128,9 +128,9 @@ internal partial class Time
 
 
 
-        await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true, cancellationToken);
+        await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true, token);
 
-        await ListPeriod(ctx, displayList, ct: cancellationToken);
+        await ListPeriod(ctx, displayList, ct: token);
         if (datesToWrite.Length == 1)
         {
             Console.WriteLine($"Førte {hoursToWrite} på {projectToWriteOn} den {datesToWrite[0]:dd.MM} ");

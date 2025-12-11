@@ -12,12 +12,32 @@ public static class Formatting
 
     public static string Format(UserDefaultedProject proj)
     {
-        return $"[purple]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Id}[/] {proj.Project} [dim]({proj.Customer})[/]";
+    }
+
+    public static string Format(Customer customer)
+    {
+        return $"[white][[{customer.Id}]][/] {customer.Name}";
+    }
+
+    public static string Format(GetAllProjectCustomer customer)
+    {
+        return $"[white][[{customer.Id}]][/] {customer.Name}";
     }
 
     public static string Format(RpcProjectsForEmployeeeForDateResponse proj)
     {
         return $"[purple]{proj.Id}[/] {proj.Project} ";
+    }
+
+    public static string Format(Project proj)
+    {
+        return $"[purple]{proj.Id}[/] {proj.Name} ";
+    }
+
+    public static string Format(GetAllProjectsIncludeCustomer proj)
+    {
+        return $"[purple]{proj.Id}[/] {proj.Name} ";
     }
 
     public static string FormatOther(Employee emp)
@@ -35,4 +55,7 @@ public static class Formatting
     {
         return date.ToString("dd. MMMM", CultureInfo.GetCultureInfo("nb-NO"));
     }
+
+
+
 }

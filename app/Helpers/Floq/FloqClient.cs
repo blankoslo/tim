@@ -4,6 +4,8 @@ using System.Text.Json;
 public class FloqClient(HttpClient client)
 {
     private Dictionary<int, Employee> empMap = new();
+    private IEnumerable<Project> projects = new List<Project>();
+    private IEnumerable<Customer> customers = new List<Customer>();
 
     public async Task<IEnumerable<Employee>> GetEmployees(CancellationToken token)
     {
@@ -75,10 +77,37 @@ public class FloqClient(HttpClient client)
         return client.SendAsync(msg, token);
     }
 
-    public async Task<IEnumerable<GetAllProjectsIncludeCustomer>?> GetAllProjectsWithCustomer()
+    public async Task<IEnumerable<GetAllProjectsIncludeCustomer>> GetAllProjectsWithCustomer(CancellationToken token)
     {
-        return await client.GetFromJsonAsync<IEnumerable<GetAllProjectsIncludeCustomer>>("/projects?select=id,name,active,billable,customer(id,name)");
+        var res = await client.GetFromJsonAsync<IEnumerable<GetAllProjectsIncludeCustomer>>("/projects?select=id,name,active,billable,customer(id,name)", token);
+        return res ?? [];
     }
+
+    public async Task<IEnumerable<Project>> GetProjects(CancellationToken token)
+    {
+        if (projects.Any())
+        {
+            return projects;
+        }
+
+        var res = await client.GetFromJsonAsync<IEnumerable<Project>>("/projects", token);
+        projects = res ?? [];
+
+        return projects;
+    }
+
+    public async Task<IEnumerable<Customer>> GetCustomers(CancellationToken token)
+    {
+        if (customers.Any())
+        {
+            return customers;
+        }
+
+        var res = await client.GetFromJsonAsync<IEnumerable<Customer>>("/customers", token);
+        customers = res ?? [];
+
+        return customers;
+}
 
     public async Task<bool> PostPaidOvertime(PaidOvertimeRequest request, CancellationToken token)
     {
@@ -104,9 +133,14 @@ public record GetAllProjectsIncludeCustomer(string Id, string Name, bool Active,
 
 public record GetAllProjectCustomer(string Id, string Name);
 
+public record Project(string Id, string Name, string Billable, string Customer, int Responsible, bool Active, bool Deductable);
+
+public record Customer(string Id, string Name);
+
+// Customer: CustonerName, ikke CustomerId
+// "Aneo Mobility", ikke "ANE"
 public record RpcProjectsForEmployeeeForDateResponse(string Id, string Project, string Customer, int Minutes, int Percentage_Staffed);
 public record RpcEmployeesOnProjectsResponse(string Customer_Id, string Customer_Name, string First_Name, string Last_Name, int Id, string Emoji);
-
 
 public record Employee(int Id,
     string Email,

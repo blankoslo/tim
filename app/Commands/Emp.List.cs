@@ -1,8 +1,4 @@
-using System.Runtime.Serialization;
-
-[RegisterCommands("emp")]
-[ConsoleAppFilter<AuthenticationFilter>]
-class EmployeeCommands
+internal partial class Emp
 {
     /// <summary>Hent alle ansatte fra Floq</summary>
     /// <param name="includeInactive"></param>
@@ -82,39 +78,4 @@ class EmployeeCommands
         }
     }
 
-
-
-    /// <summary>Hent mine ansatt-detaljer</summary>
-    public async Task Me(ConsoleAppContext ctx, CancellationToken token)
-    {
-        var session = ctx.GetUserSession();
-        var client = HttpClientFactory.CreateFloqClientForUser(session);
-        var emp = await client.GetEmployeeByEmail(session.Email, token);
-        if (emp != null)
-        {
-            Console.MarkupLine(Formatting.FormatOther(emp));
-        }
-        else
-        {
-            Console.MarkupLine($"Fant deg ikke i Floq på epost {session.Email}");
-        }
-    }
-
-    /// <summary>Hent en spesifikk ansatts detaljer</summary>
-    /// <param name="employeeId">-e, EmployeeID i Floq.</param>
-    [Command("")]
-    public async Task Get(ConsoleAppContext ctx, [Argument] int employeeId, CancellationToken token = default)
-    {
-        var session = ctx.GetUserSession();
-        var client = HttpClientFactory.CreateFloqClientForUser(session);
-        var emp = await client.GetEmployee(employeeId, token);
-        if (emp != null)
-        {
-            Console.MarkupLine(Formatting.FormatOther(emp));
-        }
-        else
-        {
-            Console.MarkupLine($"Fant ikke ansatt {employeeId} i Floq");
-        }
-    }
 }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>false</PublishAot>
@@ -60,6 +60,15 @@
     </Compile>
     <Compile Update="Commands\Authentications.WhoAmI.cs">
       <DependentUpon>Authentications.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Commands\Projects.List.cs">
+      <DependentUpon>Projects.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Commands\Emp.List.cs">
+      <DependentUpon>Emp.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Commands\Emp.Me.cs">
+      <DependentUpon>Emp.cs</DependentUpon>
     </Compile>
   </ItemGroup>
 

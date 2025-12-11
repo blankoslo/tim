@@ -1,0 +1,351 @@
+// filepath: /Users/johnkors/kode/blank/tim-ws/tim/app/Commands/Projects.cs
+
+using System.Globalization;
+
+[RegisterCommands("projects")]
+[ConsoleAppFilter<AuthenticationFilter>]
+[ConsoleAppFilter<AddStdinToContext>]
+internal partial class Projects
+{
+        /// <summary>Lister ansatte som har ført timer på et prosjekt</summary>
+    /// <param name="projectId">ProsjektID i Floq, f.eks. "ANE1006"</param>
+    /// <param name="range">-r, Hvilken periode. SingleDay,CurrentWeek,PreviousWeek,CurrentMonth,PreviousMonth"</param>
+    [Command("")]
+    public async Task List(ConsoleAppContext ctx,
+        [Argument] string? projectId = null,
+        SelectedRange range = SelectedRange.CurrentWeek,
+        CancellationToken token = default)
+    {
+        var session = ctx.UserSession;
+        var projectIds = new List<string>();
+        Console.WriteLine("Running");
+
+        // Support stdin for multiple projectIds
+        if (System.Console.IsInputRedirected)
+        {
+            ctx.StandardInput(line =>
+            {
+                if (!string.IsNullOrWhiteSpace(line.line))
+                {
+                    projectIds.Add(line.line.Trim());
+                }
+            });
+        }
+        var client = HttpClientFactory.CreateFloqClientForUser(session);
+        // If no piped input, use projectId argument
+        if (!projectIds.Any())
+        {
+            if (!string.IsNullOrWhiteSpace(projectId))
+            {
+                projectIds.Add(projectId);
+            }
+            else
+            {
+                var defaultProject = await UserSecretsManager.GetDefaultProject(token);
+
+                if (defaultProject is not null)
+                {
+                    var allProjects = await client.GetAllProjectsWithCustomer(token);
+                    var projectsForCustomer = allProjects.Where(p => p.Customer.Id == defaultProject.CustomerId);
+                    if (!projectsForCustomer.Any())
+                    {
+                        Console.Markup("[red]✗ err[/] Fant ingen prosjekter for standard-kunden. Sett et default-prosjekt med 'tim config set-default-project'");
+                        return;
+                    }
+                    projectIds.AddRange(projectsForCustomer.Select(p => p.Id));
+                }
+                else
+                {
+                    Console.Markup("[red]✗[/] Mangler prosjektID. Bruk argumentet [purple]projectId[/], eller set et default-prosjekt");
+                    return;
+                }
+
+            }
+        }
+
+
+        var dates = Time.GetWeekDays(range);
+        if (range is SelectedRange.CurrentMonth or SelectedRange.PreviousMonth)
+        {
+            dates = Time.GetMonthDays(range);
+        }
+        else if (range == SelectedRange.SingleDay)
+        {
+            dates = [DateOnly.FromDateTime(DateTime.UtcNow)];
+        }
+
+        foreach (var projId in projectIds)
+        {
+            if (projectIds.Count > 1)
+            {
+                Console.WriteLine();
+            }
+
+            await ProcessProject(projId, range, dates, client, token);
+
+            if (projectIds.Count > 1)
+            {
+                Console.WriteLine();
+            }
+        }
+    }
+
+    private static async Task ProcessProject(
+        string projectId,
+        SelectedRange range,
+        DateOnly[] dates,
+        FloqClient client,
+        CancellationToken ct)
+    {
+        var report = await CreateProjectReport(projectId, range, dates, client, ct);
+
+        if (report != null && report.HasTimeEntries())
+        {
+            Table table = new();
+            string caption = GetProjectCaption(report, dates);
+            table.Caption = new TableTitle(caption, style: new Style(foreground: Color.FromHex("#58C6FF")));
+            table.Border = TableBorder.SimpleHeavy;
+            RenderProjectTable(table, report);
+            Console.Write(table);
+        }
+        else
+        {
+            Console.MarkupLine($"[red]Ingen førte timer[/] for prosjekt [purple]{projectId}[/] i perioden");
+        }
+    }
+
+    private static string GetProjectCaption(ProjectTimeReport report, DateOnly[] dates)
+    {
+        var dateInRange = dates.First();
+
+        if (!report.IsMonthly())
+        {
+            int weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
+            return $"Prosjekt {report.ProjectId} – Uke {weekNo}";
+        }
+
+        var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(dateInRange.Month);
+        return $"Prosjekt {report.ProjectId} – {monthName} {dateInRange.Year}";
+    }
+
+    private static async Task<ProjectTimeReport?> CreateProjectReport(
+        string projectId,
+        SelectedRange range,
+        DateOnly[] dates,
+        FloqClient client,
+        CancellationToken ct)
+    {
+        // First, find all employees who have worked on projects in this date range
+        var fromDate = dates.Min();
+        var toDate = dates.Max();
+        var employeesOnProjects = (await client.GetRpcEmployeesOnProjects(fromDate, toDate, ct)).ToList();
+
+        // Get unique employee IDs
+        var employeeIds = employeesOnProjects
+            .Select(e => e.Id)
+            .Distinct()
+            .ToList();
+
+        if (!employeeIds.Any())
+        {
+            return null;
+        }
+
+        // Fetch time entries for each employee on each day, filtering by projectId
+        Dictionary<(int EmployeeId, DateOnly Day), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
+
+        foreach (var empId in employeeIds)
+        {
+            foreach (var day in dates)
+            {
+                var t = client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
+                allTasks.Add((empId, day), t);
+            }
+        }
+
+        await Task.WhenAll(allTasks.Values);
+
+        // Build employee entries filtered by projectId
+        Dictionary<int, EmployeeInfo> employeesWithHours = new();
+        Dictionary<EmployeeDay, ProjectTimeforing> timerPrAnsatt = new();
+
+        foreach (var kvp in allTasks)
+        {
+            var (empId, day) = kvp.Key;
+            var entries = await kvp.Value;
+            var projectEntry = entries.FirstOrDefault(e => e.Id.Equals(projectId, StringComparison.OrdinalIgnoreCase));
+
+            if (projectEntry != null && projectEntry.Minutes > 0)
+            {
+                // Add employee to our list if not already there
+                if (!employeesWithHours.ContainsKey(empId))
+                {
+                    var empOnProj = employeesOnProjects.FirstOrDefault(e => e.Id == empId);
+                    if (empOnProj != null)
+                    {
+                        employeesWithHours[empId] = new EmployeeInfo(empId, empOnProj.First_Name, empOnProj.Last_Name);
+                    }
+                }
+
+                timerPrAnsatt[new EmployeeDay(empId, day)] = new ProjectTimeforing(day, projectEntry.Minutes, projectEntry.Percentage_Staffed);
+            }
+        }
+
+        if (!employeesWithHours.Any())
+        {
+            return null;
+        }
+
+        // Fill in missing days with zero entries for employees who have at least some hours
+        foreach (var emp in employeesWithHours.Values)
+        {
+            foreach (var day in dates)
+            {
+                var key = new EmployeeDay(emp.Id, day);
+                if (!timerPrAnsatt.ContainsKey(key))
+                {
+                    timerPrAnsatt[key] = new ProjectTimeforing(day, 0, 0);
+                }
+            }
+        }
+
+        return new ProjectTimeReport(
+            projectId,
+            range,
+            dates,
+            employeesWithHours.Values.OrderBy(e => e.LastName).ThenBy(e => e.FirstName).ToList(),
+            timerPrAnsatt);
+    }
+
+    private static void RenderProjectTable(Table table, ProjectTimeReport report)
+    {
+        table.AddColumn("");
+        table.Columns[0].Width(25);
+
+        foreach (var day in report.Days)
+        {
+            var day1 = day;
+            table.AddColumn("", c =>
+            {
+                c.Alignment = Justify.Center;
+                c.Header = new Markup($"{day1:dd.MM}");
+            });
+
+            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+                table.AddColumn("");
+        }
+
+        foreach (var emp in report.Employees)
+        {
+            List<string> row = new() { $"[white]{emp.FirstName} {Shorten(emp.LastName, 10)}[/]" };
+
+            foreach (DateOnly day in report.Days)
+            {
+                var entry = report.GetEntry(new EmployeeDay(emp.Id, day));
+                string item = entry switch
+                {
+                    { Minutes: > 0 } => $"[white]{Formatting.MinutesToHours(entry.Minutes)}[/]",
+                    _ => "[dim]-[/]"
+                };
+                row.Add(item);
+
+                if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+                    row.Add("");
+            }
+
+            table.AddRow(row.ToArray());
+        }
+
+        // Daily sum row
+        List<string> sumRow = new() { "[green]Daglig sum[/]" };
+        var dailyTotals = new Dictionary<DateOnly, decimal>();
+
+        foreach (var day in report.Days)
+        {
+            decimal sum = report.GetDailyHoursSum(day);
+            dailyTotals[day] = sum;
+
+            if (sum > 0)
+            {
+                sumRow.Add($"[green]{sum:F1}[/]");
+            }
+            else
+            {
+                sumRow.Add("[dim]-[/]");
+            }
+
+            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+                sumRow.Add("");
+        }
+
+        table.AddRow(sumRow.ToArray());
+
+        // Weekly sum row (cumulative)
+        List<string> cumulativeRow = new() { "[dim]Ukesum[/]" };
+        decimal runningTotal = 0;
+
+        foreach (var day in report.Days)
+        {
+            decimal hours = dailyTotals[day];
+            runningTotal += hours;
+
+            if (day.DayOfWeek == DayOfWeek.Friday && runningTotal > 0)
+            {
+                cumulativeRow.Add($"[blue]{runningTotal:F1}[/]");
+            }
+            else
+            {
+                cumulativeRow.Add("[dim][/]");
+            }
+
+            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            {
+                runningTotal = 0;
+                cumulativeRow.Add("");
+            }
+        }
+
+        table.AddRow(cumulativeRow.ToArray());
+    }
+
+    private static string Shorten(string someString, int defaultLength = 20)
+    {
+        return someString.Length > defaultLength ? someString[..defaultLength] + "…" : someString;
+    }
+
+    // Records for project-centric report
+    record ProjectTimeReport(
+        string ProjectId,
+        SelectedRange Range,
+        DateOnly[] Days,
+        List<EmployeeInfo> Employees,
+        Dictionary<EmployeeDay, ProjectTimeforing> EmployeeTimeforing)
+    {
+        public bool HasTimeEntries() => EmployeeTimeforing.Any(e => e.Value.Minutes > 0);
+
+        public ProjectTimeforing GetEntry(EmployeeDay key)
+        {
+            return EmployeeTimeforing.TryGetValue(key, out var entry) ? entry : new ProjectTimeforing(key.Day, 0, 0);
+        }
+
+        public decimal GetDailyHoursSum(DateOnly day)
+        {
+            return EmployeeTimeforing
+                .Where(kvp => kvp.Key.Day == day)
+                .Sum(kvp => kvp.Value.Minutes) / 60m;
+        }
+
+        public bool IsMonthly()
+        {
+            return Range is SelectedRange.CurrentMonth or SelectedRange.PreviousMonth;
+        }
+    }
+
+    record EmployeeInfo(int Id, string FirstName, string LastName);
+
+    record EmployeeDay(int EmployeeId, DateOnly Day);
+
+    record ProjectTimeforing(DateOnly Day, int Minutes, int PercentageStaffed);
+
+}
+

@@ -96,7 +96,6 @@ public class UserSecretsManager
         var secrets = await ReadAsDictionary(token);
         if (secrets == null || !secrets.TryGetValue("DefaultProject", out var projectJson))
         {
-
             return null;
         }
 
@@ -270,7 +269,8 @@ public record UserSession(string Name, string Email, string AccessToken, string 
     }
 }
 
-public record UserDefaultedProject(string Id, string Project, string Customer);
+// Stored as JSON in file, nb, be backwards compatitble
+public record UserDefaultedProject(string Id, string Project, string Customer, string CustomerId);
 
 public record ImplicitCallbackData(string AccessToken, string ExpireDate, string RefreshToken, string UserEmail);
 
