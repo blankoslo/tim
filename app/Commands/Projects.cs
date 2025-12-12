@@ -6,7 +6,8 @@ internal partial class Projects
     /// <param name="customer">-c, kundenavn, f.eks. "Aneo Mobility</param>
     /// <param name="ids">Gi ut kun prosjekt-IDer</param>
     [Command("")]
-    public async Task<int> ListProjects(ConsoleAppContext ctx, string? customer = null, bool ids = false, CancellationToken token = default)
+    public async Task<int> ListProjects(ConsoleAppContext ctx, string? customer = null, bool ids = false,
+        CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
@@ -56,8 +57,4 @@ internal partial class Projects
         Console.Write(table);
         return 0;
     }
-
-
-
 }
-

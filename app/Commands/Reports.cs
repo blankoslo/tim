@@ -7,7 +7,8 @@ internal class Reports
     /// <param name="projectId">-p, ProsjektID, f.eks ANE1006</param>
     /// <param name="outputPath">-o, mappe for å lagre csv-filene</param>
     [Command("project-employee-hours")]
-    public async Task<int> ProjectEmployeHoursReport(ConsoleAppContext ctx, SelectedRange range, [Argument] string? projectId = null, string? outputPath = null,  CancellationToken token = default)
+    public async Task<int> ProjectEmployeHoursReport(ConsoleAppContext ctx, SelectedRange range,
+        [Argument] string? projectId = null, string? outputPath = null, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateReportsClientForUser(session);
@@ -23,6 +24,7 @@ internal class Reports
                     {
                         throw new Exception("BooM! Invalid project ID from piped input.");
                     }
+
                     projectIds.Add(line.line.Trim());
                 }
             });
@@ -41,7 +43,7 @@ internal class Reports
         DateOnly from, to;
         try
         {
-            (from,  to) = range switch
+            (from, to) = range switch
             {
                 SelectedRange.CurrentMonth => GetMonthRange(DateTime.Today),
                 SelectedRange.PreviousMonth => GetMonthRange(DateTime.Today.AddMonths(-1)),
@@ -53,12 +55,14 @@ internal class Reports
             Console.MarkupLine("[red]❌ Ugyldig range valgt[/]");
             return -1;
         }
+
         var tasks = new List<Task>();
         foreach (var pid in projectIds)
         {
             var t = Download(client, from, to, pid, outputPath, token);
             tasks.Add(t);
         }
+
         await Task.WhenAll(tasks);
         Console.MarkupLine($"[green]✓[/] Ferdig med nedlasting av rapporter.");
         return 0;
@@ -80,7 +84,8 @@ internal class Reports
 
         var fileName = Path.Combine(folder, defaultFileName);
 
-        await using var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true);
+        await using var fileStream =
+            new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
         await stream.CopyToAsync(fileStream, token);
 
         Console.MarkupLine($"[dim]Report saved {Path.GetFullPath(fileName)}[/]");

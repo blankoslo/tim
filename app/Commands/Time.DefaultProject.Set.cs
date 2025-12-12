@@ -1,5 +1,4 @@
 using System.Globalization;
-
 using static Spectre.Console.AnsiConsole;
 
 internal partial class Time
@@ -13,24 +12,26 @@ internal partial class Time
 
     /// <summary>Setter et prosjekt som default til timeføring</summary>
     /// <param name="project">-p, Prosjektets kode. Eks: 'ANE1006'</param>
-    public async Task SetDefault(ConsoleAppContext ctx, [Argument, HideDefaultValue] string? project = null,  CancellationToken token = default)
+    public async Task SetDefault(ConsoleAppContext ctx, [Argument] [HideDefaultValue] string? project = null,
+        CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
 
 
         var currentDefaultProject = await UserSecretsManager.GetDefaultProject(token);
-        if(currentDefaultProject is not null)
+        if (currentDefaultProject is not null)
         {
             await SelectFromSameCustomerAsCurrentDefaultProject(token, client, currentDefaultProject);
             return;
         }
 
-        List<GetAllProjectsIncludeCustomer> allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
+        var allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
 
         if (allProjectsForTopMinutedCustomer.Count > 0)
         {
-            List<string> choices = allProjectsForTopMinutedCustomer.OrderByDescending(p => p.Id).Select(Formatting.Format).ToList();
+            var choices = allProjectsForTopMinutedCustomer.OrderByDescending(p => p.Id).Select(Formatting.Format)
+                .ToList();
 
             var prompt = new SelectionPrompt<string>
                          {
@@ -41,17 +42,22 @@ internal partial class Time
                          };
             prompt.AddChoices(choices.ToArray());
 
-            string selected = Prompt(prompt);
+            var selected = Prompt(prompt);
 
             var selectedProject = allProjectsForTopMinutedCustomer[choices.IndexOf(selected)];
             MarkupLine($"{Formatting.Format(selectedProject)}");
-            await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name, selectedProject.Customer.Id), token);
+            await UserSecretsManager.StoreDefaultProject(
+                new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name,
+                    selectedProject.Customer.Id), token);
         }
         else
         {
             var projects = await client.GetAllProjectsWithCustomer(token);
-            var projectChoices = projects.Where(p => p is { Billable: "billable", Active: true, Customer.Id: not "NAV" }).OrderBy(p => p.Id).ToArray();
-            var choices = projectChoices.Select(Formatting.Format).ToArray();;
+            var projectChoices = projects
+                .Where(p => p is { Billable: "billable", Active: true, Customer.Id: not "NAV" }).OrderBy(p => p.Id)
+                .ToArray();
+            var choices = projectChoices.Select(Formatting.Format).ToArray();
+            ;
 
             var prompt = new SelectionPrompt<string>
                          {
@@ -62,18 +68,21 @@ internal partial class Time
                          };
             prompt.AddChoices(choices.ToArray());
 
-            string selected = Prompt(prompt);
+            var selected = Prompt(prompt);
 
             var selectedProject = projectChoices[choices.IndexOf(selected)];
             MarkupLine($"{Formatting.Format(selectedProject)}");
-            await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name, selectedProject.Customer.Id), token);
+            await UserSecretsManager.StoreDefaultProject(
+                new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name,
+                    selectedProject.Customer.Id), token);
         }
     }
 
-    private static async Task<List<GetAllProjectsIncludeCustomer>> GetProjectsForMostActiveProject(CancellationToken token, FloqClient client,
+    private static async Task<List<GetAllProjectsIncludeCustomer>> GetProjectsForMostActiveProject(
+        CancellationToken token, FloqClient client,
         UserSession session)
     {
-        DateOnly[] datesLastTwoWeeks = new DateOnly[14];
+        var datesLastTwoWeeks = new DateOnly[14];
 
         var allTasks = new List<Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
 
@@ -87,13 +96,14 @@ internal partial class Time
         var recentTimeforing = projectsLastWeeks.SelectMany(p => p).ToList();
         var recentTimeforingGroupedByProject = recentTimeforing.GroupBy(p => p.Id);
 
-        RpcProjectsForEmployeeeForDateResponse timeforingForTopProject = recentTimeforingGroupedByProject
+        var timeforingForTopProject = recentTimeforingGroupedByProject
             .OrderByDescending(g => g.Sum(p => p.Minutes))
             .Select(g => g.First())
             .First();
 
         var allProjectsWithCustomer = await client.GetAllProjectsWithCustomer(token);
-        var allProjectsForTopMinutedCustomer = allProjectsWithCustomer.Where(p => p.Customer.Name == timeforingForTopProject.Customer).ToList();
+        var allProjectsForTopMinutedCustomer = allProjectsWithCustomer
+            .Where(p => p.Customer.Name == timeforingForTopProject.Customer).ToList();
         return allProjectsForTopMinutedCustomer;
     }
 
@@ -116,11 +126,13 @@ internal partial class Time
                              "[grey](Bla opp og ned for å se flere prosjekter)[/]"
                      };
         prompt.AddChoices(choices.ToArray());
-        string selected = Prompt(prompt);
+        var selected = Prompt(prompt);
         var selectedProject = allProjects.First(p => Formatting.Format(p) == selected);
         MarkupLine($"{Formatting.Format(selectedProject)}");
         var customerForProject = await client.GetCustomers(token);
         var customer = customerForProject.First(c => c.Id == selectedProject.Customer.Id);
-        await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name, customer.Id), token);
+        await UserSecretsManager.StoreDefaultProject(
+            new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name,
+                customer.Id), token);
     }
 }
