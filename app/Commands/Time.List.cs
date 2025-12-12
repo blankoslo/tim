@@ -38,12 +38,6 @@ internal partial class Time
             });
         }
 
-        if(System.Console.IsInputRedirected && !employeeIds.Any())
-        {
-            Console.Markup("[red]ERR![/] stdin må være rene tall (int)");
-            return;
-        }
-
         // 2) If no piped input, use employeeId argument or fallback to logged-in
         if(!employeeIds.Any())
         {
