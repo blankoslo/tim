@@ -1,2 +1,4 @@
 [RegisterCommands]
-internal partial class Authentications { }
+internal partial class Authentications
+{
+}

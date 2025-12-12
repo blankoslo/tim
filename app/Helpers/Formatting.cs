@@ -4,20 +4,42 @@ public static class Formatting
 {
     public static string MinutesToHours(int? projectLogMinutes)
     {
-        if (projectLogMinutes == null)
+        if(projectLogMinutes == null)
+        {
             return "0";
+        }
 
         return (projectLogMinutes.Value / 60m).ToString("F1");
     }
 
     public static string Format(UserDefaultedProject proj)
     {
-        return $"[purple]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Id}[/] {proj.Project} [dim]({proj.Customer})[/]";
+    }
+
+    public static string Format(Customer customer)
+    {
+        return $"[white][[{customer.Id}]][/] {customer.Name}";
+    }
+
+    public static string Format(GetAllProjectCustomer customer)
+    {
+        return $"[white][[{customer.Id}]][/] {customer.Name}";
     }
 
     public static string Format(RpcProjectsForEmployeeeForDateResponse proj)
     {
         return $"[purple]{proj.Id}[/] {proj.Project} ";
+    }
+
+    public static string Format(Project proj)
+    {
+        return $"[purple]{proj.Id}[/] {proj.Name} ";
+    }
+
+    public static string Format(GetAllProjectsIncludeCustomer proj)
+    {
+        return $"[purple]{proj.Id}[/] {proj.Name} ";
     }
 
     public static string FormatOther(Employee emp)

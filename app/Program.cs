@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("nb-NO");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("nb-NO");
@@ -8,12 +8,12 @@ app.Add("", ThisWeekOrLoginRequriredCommand);
 await app.RunAsync(args);
 
 [ConsoleAppFilter<AddStdinToContext>]
-async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationToken token)
+async Task ThisWeekOrLoginRequriredCommand(ConsoleAppContext ctx, CancellationToken token)
 {
-    if (ctx.Arguments.Length > 0)
+    if(ctx.Arguments.Length > 0)
     {
         Console.MarkupLine($"""
-                            [red]Wah?[/] Forstod ikke '{string.Join(" ",ctx.Arguments)}`
+                            [red]Wah?[/] Forstod ikke '{string.Join(" ", ctx.Arguments)}`
                             Prøv [green]`tim -h|--help[/]`.
                             """);
         return;
@@ -21,19 +21,19 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
 
     var session = await UserSecretsManager.GetFloqSession(token);
 
-    if (session is { IsExpired: true })
+    if(session is { IsExpired: true })
     {
         session = await UserSecretsManager.RefreshFloqSession(token);
-        if (session is null)
+        if(session is null)
         {
-            Console.MarkupLine($"[red] Sesjon utløpt.[/] Vennligst logg inn på nytt med [green]`tim login`.[/]");
+            Console.MarkupLine("[red] Sesjon utløpt.[/] Vennligst logg inn på nytt med [green]`tim login`.[/]");
             return;
         }
     }
 
-    if (session is { IsExpired: false })
+    if(session is { IsExpired: false })
     {
-        var newCtx = ctx with { State = new GlobalState(Session:session) };
+        var newCtx = ctx with { State = new GlobalState(session) };
         await Time.ListPeriod(newCtx, SelectedRange.CurrentWeek, ct: token);
         return;
     }
@@ -46,14 +46,14 @@ async Task ThisWeekOrLoginRequriredCommand (ConsoleAppContext ctx, CancellationT
     Console.MarkupLine($"[dim] {AppInfoHelper.App.Informational}[/]");
     Console.MarkupLine("""
                        []
-                       Velkommen til tim. Kom igang med 
-                       - [green] `tim login`[/]. 
+                       Velkommen til tim. Kom igang med
+                       - [green] `tim login`[/].
                        - [green] `tim -h|--help[/]`.
                        [/]
                        """);
     var wantToLogin = new ConfirmationPrompt("Logge inn?").ShowDefaultValue(true);
     var yesPlz = Console.Prompt(wantToLogin);
-    if (yesPlz)
+    if(yesPlz)
     {
         await Authentications.LoginImpl(token);
     }

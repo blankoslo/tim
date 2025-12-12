@@ -1,4 +1,3 @@
-
 [RegisterCommands]
 internal class CurlCommand
 {
@@ -21,32 +20,35 @@ internal class CurlCommand
     {
         var session = ctx.GetUserSession();
 
-        HttpMethod httpMethod = HttpMethod.Parse(x);
+        var httpMethod = HttpMethod.Parse(x);
         var msg = new HttpRequestMessage(httpMethod, uri);
-        if (data is not null &&
-            (httpMethod == HttpMethod.Post ||
-             httpMethod == HttpMethod.Put ||
-             httpMethod == HttpMethod.Patch))
+        if(data is not null &&
+           (httpMethod == HttpMethod.Post ||
+            httpMethod == HttpMethod.Put ||
+            httpMethod == HttpMethod.Patch))
         {
             msg.Content = new StringContent(data, System.Text.Encoding.UTF8, "application/json");
         }
 
-        if (h is not null)
+        if(h is not null)
         {
-            foreach (var header in h)
+            foreach(var header in h)
             {
                 var split = header.Split(":", 2);
-                if (split.Length == 2)
+                if(split.Length != 2)
                 {
-                    var headerName = split[0].Trim();
-                    var headerValue = split[1].Trim();
-                    msg.Headers.Add(headerName, headerValue);
+                    continue;
                 }
+
+                var headerName = split[0].Trim();
+                var headerValue = split[1].Trim();
+                msg.Headers.Add(headerName, headerValue);
             }
         }
+
         var client = HttpClientFactory.CreateFloqClientForUser(session);
         var response = await client.SendAsync(msg, token);
-        if (response.IsSuccessStatusCode)
+        if(response.IsSuccessStatusCode)
         {
             var responseBody = await response.Content.ReadAsStringAsync(token);
             System.Console.Write(responseBody);
@@ -58,7 +60,7 @@ internal class CurlCommand
             Console.Write($"{(int)response.StatusCode} {response.ReasonPhrase}");
             Console.WriteLine();
             System.Console.Write(responseBody);
-            return (int) response.StatusCode;
+            return (int)response.StatusCode;
         }
     }
 }
