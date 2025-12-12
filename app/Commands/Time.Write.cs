@@ -69,9 +69,9 @@ internal partial class Time
         {
             var client = HttpClientFactory.CreateFloqClientForUser(session);
             var allProjects = await client.GetAllProjectsWithCustomer(token);
-            var projectExists = allProjects?.Any(p =>
+            var projectExists = allProjects.Any(p =>
                 string.Compare(p.Id, project, StringComparison.CurrentCultureIgnoreCase) == 0);
-            if(projectExists is false)
+            if(!projectExists)
             {
                 Console.MarkupLine($"[red]❌ Fant ingen prosjekt med kode '{project}'[/]");
                 var availableProjects = allProjects?

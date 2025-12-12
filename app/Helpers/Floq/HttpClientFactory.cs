@@ -45,14 +45,14 @@ public class HttpClientFactory
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         if(employeeId is { } empId)
         {
-            FloqClient.DefaultRequestHeaders.Add("User-Agent", [
+            client.DefaultRequestHeaders.Add("User-Agent", [
                 $"tim/{AppInfoHelper.App.MajorMinorPatch}",
                 $"floq-employee/{empId}"
             ]);
         }
         else
         {
-            FloqClient.DefaultRequestHeaders.Add("User-Agent", [
+            client.DefaultRequestHeaders.Add("User-Agent", [
                 $"tim/{AppInfoHelper.App.MajorMinorPatch}"
             ]);
         }

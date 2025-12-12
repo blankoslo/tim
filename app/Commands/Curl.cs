@@ -35,12 +35,14 @@ internal class CurlCommand
             foreach(var header in h)
             {
                 var split = header.Split(":", 2);
-                if(split.Length == 2)
+                if(split.Length != 2)
                 {
-                    var headerName = split[0].Trim();
-                    var headerValue = split[1].Trim();
-                    msg.Headers.Add(headerName, headerValue);
+                    continue;
                 }
+
+                var headerName = split[0].Trim();
+                var headerValue = split[1].Trim();
+                msg.Headers.Add(headerName, headerValue);
             }
         }
 

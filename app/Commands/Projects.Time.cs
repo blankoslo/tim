@@ -53,7 +53,7 @@ internal partial class Projects
 
                 if(defaultProject is not null)
                 {
-                    projectIds.AddRange(defaultProject.Id);
+                    projectIds.Add(defaultProject.Id);
                 }
                 else
                 {
