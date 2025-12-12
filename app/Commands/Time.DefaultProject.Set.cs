@@ -28,7 +28,7 @@ internal partial class Time
 
         List<GetAllProjectsIncludeCustomer> allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
 
-        if (allProjectsForTopMinutedCustomer.Count == 0)
+        if (allProjectsForTopMinutedCustomer.Count > 0)
         {
             List<string> choices = allProjectsForTopMinutedCustomer.OrderByDescending(p => p.Id).Select(Formatting.Format).ToList();
 
