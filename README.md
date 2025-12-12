@@ -78,21 +78,30 @@ Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/late
 ## 💻 Bruk
 
 ```bash
-# 7.5 timer på prosjekt ANE1006 for i dag
+# Skriv 7.5 timer på prosjekt ANE1006 for i dag
 tim write -p ANE1006 
 
-# 7.5 timer på default-prosjekt for i dag
+# Skriv 7.5 timer på default-prosjekt for i dag
 tim set-default ANE1006
 tim write 
 
-# 3.5 timer istedet for defaulten 7,5, idag
+# Skriv 3.5 timer istedet for defaulten 7,5, idag
 tim write 3,5
 
-# Hente ut ukesrapport for alle hos kunden 'Aneo Mobility'
+# Vis ukesrapport for alle hos kunden 'Aneo Mobility'
 tim emp ls -c "Aneo Mobility" --ids | tim ls
 
-# Hente ut månedsrapport for alle hos kunden 'Aneo Mobility' for forrige måned
+# Vis ansattrapport for alle hos kunden 'Aneo Mobility' for forrige måned
 tim emp ls -c "Aneo Mobility" --ids | tim ls --range PreviousMonth
+
+# Vis prosjekter
+tim projects -c "Aneo Mobility"
+
+# Vis prosjekt-timeføring:
+tim projects -c "Aneo Mobility" --ids | tim projects time -r PreviousMonth
+
+# Last ned CSV-rapport-filene fra Floq reports APIet som brukes som vedlegg til kundefaktura:
+tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r previousmonth
 ```
 
 <div align="center">
