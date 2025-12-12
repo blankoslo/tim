@@ -12,7 +12,7 @@ internal partial class Time
 
     /// <summary>Setter et prosjekt som default til timeføring</summary>
     /// <param name="project">-p, Prosjektets kode. Eks: 'ANE1006'</param>
-    public async Task SetDefault(ConsoleAppContext ctx, [Argument] [HideDefaultValue] string? project = null,
+    public async Task SetDefault(ConsoleAppContext ctx, [Argument][HideDefaultValue] string? project = null,
         CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
@@ -34,12 +34,12 @@ internal partial class Time
                 .ToList();
 
             var prompt = new SelectionPrompt<string>
-                         {
-                             Title = "Velg et nylig prosjekt å sette som [green]standard[/]:",
-                             PageSize = 10,
-                             MoreChoicesText =
+            {
+                Title = "Velg et nylig prosjekt å sette som [green]standard[/]:",
+                PageSize = 10,
+                MoreChoicesText =
                                  "[grey](Bla opp og ned for å se flere prosjekter)[/]"
-                         };
+            };
             prompt.AddChoices(choices.ToArray());
 
             var selected = Prompt(prompt);
@@ -60,12 +60,12 @@ internal partial class Time
             ;
 
             var prompt = new SelectionPrompt<string>
-                         {
-                             Title = "Velg et prosjekt blant alle å sette som [green]standard[/]:",
-                             PageSize = 10,
-                             MoreChoicesText =
+            {
+                Title = "Velg et prosjekt blant alle å sette som [green]standard[/]:",
+                PageSize = 10,
+                MoreChoicesText =
                                  "[grey](Bla opp og ned for å se flere prosjekter)[/]"
-                         };
+            };
             prompt.AddChoices(choices.ToArray());
 
             var selected = Prompt(prompt);
@@ -119,12 +119,12 @@ internal partial class Time
             .Select(Formatting.Format)
             .ToList();
         var prompt = new SelectionPrompt<string>
-                     {
-                         Title = "Velg et prosjekt å sette som [green]standard[/]:",
-                         PageSize = 10,
-                         MoreChoicesText =
+        {
+            Title = "Velg et prosjekt å sette som [green]standard[/]:",
+            PageSize = 10,
+            MoreChoicesText =
                              "[grey](Bla opp og ned for å se flere prosjekter)[/]"
-                     };
+        };
         prompt.AddChoices(choices.ToArray());
         var selected = Prompt(prompt);
         var selectedProject = allProjects.First(p => Formatting.Format(p) == selected);

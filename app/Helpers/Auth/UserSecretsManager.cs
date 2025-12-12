@@ -8,10 +8,10 @@ using Microsoft.Extensions.Configuration.UserSecrets;
 public class UserSecretsManager
 {
     private static readonly HttpClient AuthClient = new()
-                                                    {
-                                                        BaseAddress = new Uri("https://inni.blank.no"),
-                                                        Timeout = TimeSpan.FromSeconds(10)
-                                                    };
+    {
+        BaseAddress = new Uri("https://inni.blank.no"),
+        Timeout = TimeSpan.FromSeconds(10)
+    };
 
     public static async Task WriteImplicitData(ImplicitCallbackData data, Employee? employee, CancellationToken token)
     {

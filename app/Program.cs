@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("nb-NO");
 CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("nb-NO");
@@ -26,7 +26,7 @@ async Task ThisWeekOrLoginRequriredCommand(ConsoleAppContext ctx, CancellationTo
         session = await UserSecretsManager.RefreshFloqSession(token);
         if(session is null)
         {
-            Console.MarkupLine($"[red] Sesjon utløpt.[/] Vennligst logg inn på nytt med [green]`tim login`.[/]");
+            Console.MarkupLine("[red] Sesjon utløpt.[/] Vennligst logg inn på nytt med [green]`tim login`.[/]");
             return;
         }
     }

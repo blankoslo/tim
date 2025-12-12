@@ -9,9 +9,9 @@ public class HttpClientFactory
     private static readonly HttpClient FloqClient = new() { BaseAddress = new Uri("https://api-prod.floq.no") };
 
     private static readonly HttpClient ReportsClient = new()
-                                                       {
-                                                           BaseAddress = new Uri("https://reports-api-prod.floq.no")
-                                                       };
+    {
+        BaseAddress = new Uri("https://reports-api-prod.floq.no")
+    };
 
     public static FloqClient CreateFloqClientForUser(UserSession session)
     {
