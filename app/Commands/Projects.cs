@@ -27,7 +27,7 @@ internal partial class Projects
         if(ids)
         {
             Console.WriteLine(string.Join(Environment.NewLine, projects.Select(p => p.Id)));
-            return -1;
+            return 0;
         }
 
         if(projects.Count() == 0)
