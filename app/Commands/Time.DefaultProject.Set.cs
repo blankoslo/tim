@@ -27,10 +27,11 @@ internal partial class Time
         }
 
         var allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
-
-        if(allProjectsForTopMinutedCustomer.Count > 0)
+        WriteLine($"Count: {allProjectsForTopMinutedCustomer.Count()}");
+        if(allProjectsForTopMinutedCustomer.Count() > 0)
         {
-            var choices = allProjectsForTopMinutedCustomer.OrderByDescending(p => p.Id).Select(Formatting.Format)
+            var source = allProjectsForTopMinutedCustomer.ToArray();
+            var choices = source.Select(Formatting.Format)
                 .ToList();
 
             var prompt = new SelectionPrompt<string>
@@ -44,11 +45,13 @@ internal partial class Time
 
             var selected = Prompt(prompt);
 
-            var selectedProject = allProjectsForTopMinutedCustomer[choices.IndexOf(selected)];
+            var selectedProject = source[choices.IndexOf(selected)];
+            var allProjects = await client.GetAllProjectsWithCustomer(token);
+            var allcustomers = await client.GetCustomers(token);
+            var customer = allcustomers.First(p => p.Name == selectedProject.Customer);
+            var selectedProjectDetails = allProjects.First(p => p.Id == selectedProject.Id);
             MarkupLine($"{Formatting.Format(selectedProject)}");
-            await UserSecretsManager.StoreDefaultProject(
-                new UserDefaultedProject(selectedProject.Id, selectedProject.Name, selectedProject.Customer.Name,
-                    selectedProject.Customer.Id), token);
+            await UserSecretsManager.StoreDefaultProject(new UserDefaultedProject(selectedProjectDetails.Id, selectedProjectDetails.Name, customer.Name, customer.Id), token);
         }
         else
         {
@@ -78,11 +81,14 @@ internal partial class Time
         }
     }
 
-    private static async Task<List<GetAllProjectsIncludeCustomer>> GetProjectsForMostActiveProject(
+    private static async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetProjectsForMostActiveProject(
         CancellationToken token, FloqClient client,
         UserSession session)
     {
-        var datesLastTwoWeeks = new DateOnly[14];
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var datesLastTwoWeeks = Enumerable.Range(0, 14)
+            .Select(i => today.AddDays(-i))
+            .ToArray();
 
         var allTasks = new List<Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
 
@@ -93,18 +99,18 @@ internal partial class Time
         }
 
         var projectsLastWeeks = await Task.WhenAll(allTasks);
+        if(projectsLastWeeks.Length == 0)
+        {
+            return [];
+        }
         var recentTimeforing = projectsLastWeeks.SelectMany(p => p).ToList();
         var recentTimeforingGroupedByProject = recentTimeforing.GroupBy(p => p.Id);
 
         var timeforingForTopProject = recentTimeforingGroupedByProject
             .OrderByDescending(g => g.Sum(p => p.Minutes))
-            .Select(g => g.First())
-            .First();
+            .Select(g => g.First());
 
-        var allProjectsWithCustomer = await client.GetAllProjectsWithCustomer(token);
-        var allProjectsForTopMinutedCustomer = allProjectsWithCustomer
-            .Where(p => p.Customer.Name == timeforingForTopProject.Customer).ToList();
-        return allProjectsForTopMinutedCustomer;
+        return timeforingForTopProject;
     }
 
     private static async Task SelectFromSameCustomerAsCurrentDefaultProject(CancellationToken token, FloqClient client,
