@@ -13,7 +13,7 @@
     <PackAsTool>true</PackAsTool>
     <LangVersion>latest</LangVersion>
     <ToolCommandName>tim</ToolCommandName>
-    
+
     <Authors>blankdev, johnkors</Authors>
     <PackageId>BlankDev.Tools.Tim</PackageId>
     <Description>Floq CLI</Description>

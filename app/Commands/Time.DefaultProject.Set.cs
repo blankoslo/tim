@@ -20,7 +20,7 @@ internal partial class Time
 
 
         var currentDefaultProject = await UserSecretsManager.GetDefaultProject(token);
-        if (currentDefaultProject is not null)
+        if(currentDefaultProject is not null)
         {
             await SelectFromSameCustomerAsCurrentDefaultProject(token, client, currentDefaultProject);
             return;
@@ -28,7 +28,7 @@ internal partial class Time
 
         var allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
 
-        if (allProjectsForTopMinutedCustomer.Count > 0)
+        if(allProjectsForTopMinutedCustomer.Count > 0)
         {
             var choices = allProjectsForTopMinutedCustomer.OrderByDescending(p => p.Id).Select(Formatting.Format)
                 .ToList();
@@ -86,7 +86,7 @@ internal partial class Time
 
         var allTasks = new List<Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
 
-        foreach (var date in datesLastTwoWeeks)
+        foreach(var date in datesLastTwoWeeks)
         {
             var task = client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, date, token);
             allTasks.Add(task);

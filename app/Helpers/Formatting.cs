@@ -4,8 +4,10 @@ public static class Formatting
 {
     public static string MinutesToHours(int? projectLogMinutes)
     {
-        if (projectLogMinutes == null)
+        if(projectLogMinutes == null)
+        {
             return "0";
+        }
 
         return (projectLogMinutes.Value / 60m).ToString("F1");
     }
@@ -55,7 +57,4 @@ public static class Formatting
     {
         return date.ToString("dd. MMMM", CultureInfo.GetCultureInfo("nb-NO"));
     }
-
-
-
 }

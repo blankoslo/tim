@@ -18,18 +18,18 @@ public class AppInfoHelper
             ?.InformationalVersion;
 
         string? sha = null;
-        if (!string.IsNullOrEmpty(informationalVersion))
+        if(!string.IsNullOrEmpty(informationalVersion))
         {
-            if (informationalVersion.Contains(".Sha.", StringComparison.Ordinal))
+            if(informationalVersion.Contains(".Sha.", StringComparison.Ordinal))
             {
                 // Handle deployed format: extract SHA after ".Sha."
                 var shaIndex = informationalVersion.LastIndexOf(".Sha.", StringComparison.Ordinal) + 5;
-                if (shaIndex < informationalVersion.Length)
+                if(shaIndex < informationalVersion.Length)
                 {
                     sha = informationalVersion.Substring(shaIndex);
                 }
             }
-            else if (informationalVersion.Contains("+"))
+            else if(informationalVersion.Contains("+"))
             {
                 // Handle local format: extract SHA after "+"
                 sha = informationalVersion.Split('+').Last();

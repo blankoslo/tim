@@ -6,13 +6,13 @@ internal static class ConsoleAppContextExtensions
 
         public UserSession GetUserSession()
         {
-            GlobalState? state =  (GlobalState?) ctx.State;
-            if (state is null or { Session: null })
+            var state = (GlobalState?)ctx.State;
+            if(state is null or { Session: null })
             {
                 throw new Exception("Tried to fetch session, but session was not present or expired.");
             }
 
-            if (state is { Session.IsExpired: true })
+            if(state is { Session.IsExpired: true })
             {
                 throw new Exception("Session expired.");
             }
@@ -22,13 +22,13 @@ internal static class ConsoleAppContextExtensions
 
         public void StandardInput(Action<StdinLine> linehandler)
         {
-            GlobalState? state =  (GlobalState?) ctx.State;
-            if (state is null or { StdIn: null })
+            var state = (GlobalState?)ctx.State;
+            if(state is null or { StdIn: null })
             {
                 return;
             }
 
-            foreach (var line in state.StdIn)
+            foreach(var line in state.StdIn)
             {
                 linehandler(new StdinLine(line));
             }

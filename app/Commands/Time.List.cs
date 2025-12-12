@@ -1,5 +1,4 @@
 using System.Globalization;
-
 using Spectre.Console.Rendering;
 
 internal partial class Time
@@ -14,7 +13,10 @@ internal partial class Time
         SelectedRange range = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
         string? customer = null,
-        CancellationToken token = default) => await ListPeriod(ctx, range, emp, customer, token);
+        CancellationToken token = default)
+    {
+        await ListPeriod(ctx, range, emp, customer, token);
+    }
 
     internal static async Task ListPeriod(ConsoleAppContext consoleCtx,
         SelectedRange range,
@@ -25,43 +27,47 @@ internal partial class Time
         var session = consoleCtx.UserSession;
         var employeeIds = new List<int>();
 
-        if (System.Console.IsInputRedirected)
+        if(System.Console.IsInputRedirected)
         {
             consoleCtx.StandardInput(line =>
             {
-                if (line.IsInteger(out var empIdFromStdIn))
+                if(line.IsInteger(out var empIdFromStdIn))
                 {
                     employeeIds.Add(empIdFromStdIn);
                 }
             });
         }
 
-        if (System.Console.IsInputRedirected && !employeeIds.Any())
+        if(System.Console.IsInputRedirected && !employeeIds.Any())
         {
             Console.Markup("[red]ERR![/] stdin må være rene tall (int)");
             return;
         }
 
         // 2) If no piped input, use employeeId argument or fallback to logged-in
-        if (!employeeIds.Any())
+        if(!employeeIds.Any())
         {
-            if (employeeId != null)
+            if(employeeId != null)
+            {
                 employeeIds.Add(employeeId.Value); // argument
+            }
             else
+            {
                 employeeIds.Add(session.EmployeeId); // fallback
+            }
         }
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
-        foreach (var empId in employeeIds)
+        foreach(var empId in employeeIds)
         {
-            if (employeeIds.Count > 1)
+            if(employeeIds.Count > 1)
             {
                 Console.WriteLine();
             }
 
             await ProcessEmployee(range, empId, customer, ct, session, client, employeeIds.Count > 1);
 
-            if (employeeIds.Count > 1)
+            if(employeeIds.Count > 1)
             {
                 Console.WriteLine();
             }
@@ -76,11 +82,11 @@ internal partial class Time
         var empId = employeeId ?? session.EmployeeId;
 
         var report = await CreateReport(range, dates, client, empId, customer, ct);
-        if (report != null && report.HasTimeEntries())
+        if(report != null && report.HasTimeEntries())
         {
             Table table = new();
-            string? caption = GetCaption(report, dates, session, multipleEmployeeOutput);
-            table.Caption = new TableTitle(caption ?? "?", style: new Style(foreground: Color.FromHex("#58C6FF")));
+            var caption = GetCaption(report, dates, session, multipleEmployeeOutput);
+            table.Caption = new TableTitle(caption ?? "?", new Style(Color.FromHex("#58C6FF")));
             table.Border = TableBorder.SimpleHeavy;
             RenderTableLive(table, report);
             Console.Write(table);
@@ -91,27 +97,26 @@ internal partial class Time
             var empStr = employee is not null ? Formatting.FormatOther(employee) : empId.ToString();
             Console.MarkupLine($"[red]Ikke bemannet[/],  {empStr}");
         }
-
     }
 
     private static string? GetCaption(WeeklyTimeforingReport report, DateOnly[] dates, UserSession session,
         bool multipleEmployeeOutput)
     {
         var empStr = $" – {report.Employee.First_Name} {report.Employee.Last_Name}";
-        if (session.EmployeeId == report.Employee.Id && !multipleEmployeeOutput)
+        if(session.EmployeeId == report.Employee.Id && !multipleEmployeeOutput)
         {
             empStr = "";
         }
 
         var dateInRange = dates.First();
 
-        if (!report.IsMonthly())
+        if(!report.IsMonthly())
         {
-            int weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
+            var weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
             return $"Uke {weekNo}{empStr}";
         }
 
-        if (report.IsMonthly())
+        if(report.IsMonthly())
         {
             var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(dateInRange.Month);
             return $"{monthName} {dateInRange.Year}{empStr}";
@@ -126,14 +131,14 @@ internal partial class Time
         string? customer,
         CancellationToken ct)
     {
-        Employee? emp = await client.GetEmployee(employeeId, ct);
-        if (emp is null)
+        var emp = await client.GetEmployee(employeeId, ct);
+        if(emp is null)
         {
             return null;
         }
 
         Dictionary<DateOnly, Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
-        foreach (DateOnly singleDay in dates)
+        foreach(var singleDay in dates)
         {
             var t = client.GetRpcProjectsForEmployeeForDate(employeeId, singleDay, ct);
             allTasks.Add(singleDay, t);
@@ -142,12 +147,13 @@ internal partial class Time
         await Task.WhenAll(allTasks.Values);
 
         Dictionary<DateOnly, IEnumerable<RpcProjectsForEmployeeeForDateResponse>> entriesByDay = new();
-        foreach (var kvp in allTasks)
+        foreach(var kvp in allTasks)
         {
-            IEnumerable<RpcProjectsForEmployeeeForDateResponse> entries = await kvp.Value;
-            if (customer is not null)
+            var entries = await kvp.Value;
+            if(customer is not null)
             {
-                entriesByDay[kvp.Key] = entries.Where(e => e.Customer.Equals(customer, StringComparison.CurrentCultureIgnoreCase));
+                entriesByDay[kvp.Key] =
+                    entries.Where(e => e.Customer.Equals(customer, StringComparison.CurrentCultureIgnoreCase));
             }
             else
             {
@@ -155,7 +161,7 @@ internal partial class Time
             }
         }
 
-        List<Project> projects = entriesByDay.SelectMany(kvp => kvp.Value)
+        var projects = entriesByDay.SelectMany(kvp => kvp.Value)
             .GroupBy(p => p.Id)
             .Select(g => g.First())
             .OrderBy(p => p.Id)
@@ -164,9 +170,9 @@ internal partial class Time
 
         Dictionary<ProjectDay, Timeforing> timerPrProsjekt = new();
 
-        foreach (var project in projects)
+        foreach(var project in projects)
         {
-            foreach (var day in dates)
+            foreach(var day in dates)
             {
                 var projectEntriesOnDay = entriesByDay[day].FirstOrDefault(e => e.Id == project.Id);
 
@@ -181,9 +187,17 @@ internal partial class Time
         return report;
     }
 
-    record WeeklyTimeforingReport(SelectedRange Range, DateOnly[] Days, List<Project> Projects, Dictionary<ProjectDay, Timeforing> ProjectTimeforing, Employee Employee)
+    private record WeeklyTimeforingReport(
+        SelectedRange Range,
+        DateOnly[] Days,
+        List<Project> Projects,
+        Dictionary<ProjectDay, Timeforing> ProjectTimeforing,
+        Employee Employee)
     {
-        public bool HasTimeEntries() => ProjectTimeforing.Any();
+        public bool HasTimeEntries()
+        {
+            return ProjectTimeforing.Any();
+        }
 
         public Timeforing GetEntry(ProjectDay proj)
         {
@@ -192,9 +206,9 @@ internal partial class Time
 
         public decimal GetDailyHoursSum(DateOnly projectDay)
         {
-            return (ProjectTimeforing
+            return ProjectTimeforing
                 .Where(kvp => kvp.Key.Day == projectDay)
-                .Sum(kvp => kvp.Value.Minutes))/60m;
+                .Sum(kvp => kvp.Value.Minutes) / 60m;
         }
 
         public bool IsMonthly()
@@ -207,21 +221,20 @@ internal partial class Time
         }
     }
 
-    record Timeforing(DateOnly Day, int Minutes, int PercentageStaffed);
+    private record Timeforing(DateOnly Day, int Minutes, int PercentageStaffed);
 
-    record Project(string Id, string Name);
+    private record Project(string Id, string Name);
 
-    record ProjectDay(string ProjectId, DateOnly Day);
+    private record ProjectDay(string ProjectId, DateOnly Day);
 
     private static void RenderTableLive(Table table,
         WeeklyTimeforingReport report)
     {
-
         table.AddColumn("");
 
         table.Columns[0].Width(30);
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
             var day1 = day;
             table.AddColumn("", c =>
@@ -230,28 +243,31 @@ internal partial class Time
                 c.Header = new Markup($"{day1:dd.MM}");
             });
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            {
                 table.AddColumn("");
-
+            }
         }
 
-        foreach (var proj in report.Projects)
+        foreach(var proj in report.Projects)
         {
             List<string> row = new() { $"[purple]{proj.Id}[/] {Shorten(proj.Name)}" };
-            foreach (DateOnly day in report.Days)
+            foreach(var day in report.Days)
             {
                 var entry = report.GetEntry(new ProjectDay(proj.Id, day));
-                string item = (proj.Id, entry) switch
-                    {
-                        (_, { Minutes: > 0}) => $"[white]{Formatting.MinutesToHours(entry.Minutes)}[/]",
-                        ("AVS",{ PercentageStaffed: > 0 }) => $"[purple]A[/]",
-                        ("FER1000",{ PercentageStaffed: > 0 }) => $"[purple]F[/]",
-                        _ => "[dim]-[/]"
-                    };
+                var item = (proj.Id, entry) switch
+                {
+                    (_, { Minutes: > 0 }) => $"[white]{Formatting.MinutesToHours(entry.Minutes)}[/]",
+                    ("AVS", { PercentageStaffed: > 0 }) => $"[purple]A[/]",
+                    ("FER1000", { PercentageStaffed: > 0 }) => $"[purple]F[/]",
+                    _ => "[dim]-[/]"
+                };
                 row.Add(item);
 
                 if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+                {
                     row.Add("");
+                }
             }
 
             table.AddRow(row.ToArray());
@@ -260,12 +276,12 @@ internal partial class Time
         List<string> sumRow = new() { "[]Daglig sum[/]" };
         var dailyTotals = new Dictionary<DateOnly, decimal>();
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
-            decimal sum = report.GetDailyHoursSum(day);
+            var sum = report.GetDailyHoursSum(day);
             dailyTotals[day] = sum;
 
-            if (sum > 0)
+            if(sum > 0)
             {
                 sumRow.Add($"[{(sum < 7.5m ? "yellow" : "green")}]{sum}[/]");
             }
@@ -276,24 +292,26 @@ internal partial class Time
 
 
             if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            {
                 sumRow.Add("");
+            }
         }
 
         table.AddRow(sumRow.ToArray());
 
         List<string> cumulativeRow = new() { "[dim]Ukesum[/]" };
         decimal runningTotal = 0;
-        foreach (var day in  report.Days)
+        foreach(var day in report.Days)
         {
-            decimal minutes = dailyTotals[day];
+            var minutes = dailyTotals[day];
             runningTotal += minutes;
-            string color = "";
-            if (day.DayOfWeek == DayOfWeek.Friday)
+            var color = "";
+            if(day.DayOfWeek == DayOfWeek.Friday)
             {
                 color = runningTotal < 37.5m ? "red" : "green";
             }
 
-            if (day.DayOfWeek == DayOfWeek.Friday && runningTotal > 0)
+            if(day.DayOfWeek == DayOfWeek.Friday && runningTotal > 0)
             {
                 cumulativeRow.Add($"[{color}]{runningTotal}[/]");
             }
@@ -303,7 +321,7 @@ internal partial class Time
             }
 
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Friday)
             {
                 runningTotal = 0;
                 cumulativeRow.Add("");
@@ -322,21 +340,22 @@ internal partial class Time
             (_, SelectedRange.SingleDay) => [DateOnly.FromDateTime(DateTime.UtcNow)],
             (_, SelectedRange.CurrentWeek or SelectedRange.PreviousWeek) => GetWeekDays(range),
             (_, SelectedRange.CurrentMonth or SelectedRange.PreviousMonth) => GetMonthDays(range),
-            _ => throw new Exception("Ugyldig kommando, du må enten velge en dato eller en range. Range:'{range}', dato:'{date}'")
+            _ => throw new Exception(
+                "Ugyldig kommando, du må enten velge en dato eller en range. Range:'{range}', dato:'{date}'")
         };
     }
 
     public static DateOnly[] GetWeekDays(SelectedRange? week)
     {
-        DateOnly dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
+        var dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        if (week == SelectedRange.PreviousWeek)
+        if(week == SelectedRange.PreviousWeek)
         {
             dateInWeek = dateInWeek.AddDays(-7);
         }
 
-        int year = ISOWeekShim.GetYear(dateInWeek);
-        int weekNo = ISOWeekShim.GetWeekOfYear(dateInWeek);
+        var year = ISOWeekShim.GetYear(dateInWeek);
+        var weekNo = ISOWeekShim.GetWeekOfYear(dateInWeek);
 
         var weekDaysForRange = Enumerable.Range(1, 5)
             .Select(dayOfWeek => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)dayOfWeek)))
@@ -347,14 +366,14 @@ internal partial class Time
 
     public static DateOnly[] GetMonthDays(SelectedRange? week)
     {
-        DateOnly dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (week == SelectedRange.PreviousMonth)
+        var dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
+        if(week == SelectedRange.PreviousMonth)
         {
             dateInMonth = dateInMonth.AddMonths(-1);
         }
 
-        int year = dateInMonth.Year;
-        int month = dateInMonth.Month;
+        var year = dateInMonth.Year;
+        var month = dateInMonth.Month;
 
         var daysInMonth = DateTime.DaysInMonth(year, month);
 
@@ -364,7 +383,6 @@ internal partial class Time
             .ToArray();
 
         return monthDaysForRange;
-
     }
 
     private static string Shorten(string someString, int defaultLength = 20)

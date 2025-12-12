@@ -4,9 +4,9 @@ internal partial class Time
     public async Task<int> GetDefault(ConsoleAppContext ctx, bool ids = false, CancellationToken token = default)
     {
         var defaultProj = await UserSecretsManager.GetDefaultProject(token);
-        if (defaultProj != null)
+        if(defaultProj != null)
         {
-            if (ids)
+            if(ids)
             {
                 Console.WriteLine(defaultProj.Id);
             }

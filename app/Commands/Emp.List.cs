@@ -5,30 +5,30 @@ internal partial class Emp
     /// <param name="customer">-c, Kundenavn, f.eks. "Aneo Mobility"</param>
     /// <param name="ids">Bare gi ut id'ene, slik at det kan pipes til 'tim ls'</param>
     [Command("list|emp ls")]
-    public async Task List(ConsoleAppContext ctx, bool includeInactive = false, string? customer = null, bool ids = false, CancellationToken token = default)
+    public async Task List(ConsoleAppContext ctx, bool includeInactive = false, string? customer = null,
+        bool ids = false, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
 
-        if (customer == null)
+        if(customer == null)
         {
             var res = await client.GetEmployees(token);
             var steadies = res
                 .Where(e => e.ActivelyEmployeed() || includeInactive)
                 .OrderBy(e => e.Id)
                 .ToArray();
-            for (var index = 0; index < steadies.Length; index++)
+            for(var index = 0; index < steadies.Length; index++)
             {
                 var emp = steadies[index];
-                if (ids)
+                if(ids)
                 {
                     Console.WriteLine(emp.Id);
                 }
                 else
                 {
-                    Console.MarkupLine($"({index+1}/{steadies.Length}) " + Formatting.FormatOther(emp));
+                    Console.MarkupLine($"({index + 1}/{steadies.Length}) " + Formatting.FormatOther(emp));
                 }
-
             }
         }
         else
@@ -42,13 +42,13 @@ internal partial class Emp
                 .OrderBy(e => e.Id)
                 .GroupBy(e => e.Customer_Id);
 
-            foreach (var empsAtCustomer in empsAtCustomers)
+            foreach(var empsAtCustomer in empsAtCustomers)
             {
-                foreach (var emp in empsAtCustomer.ToList())
+                foreach(var emp in empsAtCustomer.ToList())
                 {
-                    if (includeInactive)
+                    if(includeInactive)
                     {
-                        if (ids)
+                        if(ids)
                         {
                             Console.WriteLine(emp.Id);
                         }
@@ -61,9 +61,11 @@ internal partial class Emp
                     {
                         var allDetails = allEmployees.FirstOrDefault(e => e.ActivelyEmployeed() && e.Id == emp.Id);
                         if(allDetails == null)
+                        {
                             continue;
+                        }
 
-                        if (ids)
+                        if(ids)
                         {
                             Console.WriteLine(emp.Id);
                         }
@@ -72,10 +74,8 @@ internal partial class Emp
                             Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
                         }
                     }
-
                 }
             }
         }
     }
-
 }

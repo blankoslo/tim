@@ -20,14 +20,14 @@ internal class Overtime
         var minutes = (int)(hours * 60);
 
         var request = new PaidOvertimeRequest(
-            employee: session.EmployeeId,
-            minutes: minutes,
-            comment: comment
+            session.EmployeeId,
+            minutes,
+            comment
         );
 
         var success = await client.PostPaidOvertime(request, token);
 
-        if (success)
+        if(success)
         {
             Console.MarkupLine($"[green]✓[/] Registrerte [bold]{hours}[/] timer overtid");
             Console.MarkupLine($"  [dim]Kommentar: {comment}[/]");
@@ -49,7 +49,7 @@ internal class Overtime
 
         var entries = await client.GetPaidOvertime(session.EmployeeId, token);
 
-        if (!entries.Any())
+        if(!entries.Any())
         {
             Console.MarkupLine("[dim]Ingen registrerte overtidstimer funnet.[/]");
             return;
@@ -67,12 +67,12 @@ internal class Overtime
             .ThenByDescending(e => e.Paid_Date)
             .Take(5);
 
-        foreach (var entry in sorted)
+        foreach(var entry in sorted)
         {
             var hours = entry.Minutes / 60m;
             var paidDateStr = entry.Paid_Date?.ToString("dd.MM.yyyy") ?? "-";
             var regDateStr = entry.Registered_Date?.ToString("dd.MM.yyyy") ?? "-";
-            
+
             table.AddRow(
                 $"[dim]{entry.Id}[/]",
                 paidDateStr,
@@ -99,15 +99,16 @@ internal class Overtime
         var entries = await client.GetPaidOvertime(session.EmployeeId, token);
         var entry = entries.FirstOrDefault(e => e.Id == id);
 
-        if (entry == null)
+        if(entry == null)
         {
             Console.MarkupLine($"[red]✗[/] Fant ingen overtidsregistrering med ID {id}.");
             return;
         }
 
-        if (entry.Paid_Date != null)
+        if(entry.Paid_Date != null)
         {
-            Console.MarkupLine($"[red]✗[/] Kan ikke slette overtid som allerede er utbetalt (utbetalt {entry.Paid_Date:dd.MM.yyyy}).");
+            Console.MarkupLine(
+                $"[red]✗[/] Kan ikke slette overtid som allerede er utbetalt (utbetalt {entry.Paid_Date:dd.MM.yyyy}).");
             return;
         }
 
@@ -116,7 +117,7 @@ internal class Overtime
 
         var success = await client.DeletePaidOvertime(id, token);
 
-        if (success)
+        if(success)
         {
             Console.MarkupLine($"[green]✓[/] Slettet overtidsregistrering.");
         }

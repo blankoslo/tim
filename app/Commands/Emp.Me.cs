@@ -6,13 +6,8 @@ internal partial class Emp
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
         var emp = await client.GetEmployeeByEmail(session.Email, token);
-        if (emp != null)
-        {
-            Console.MarkupLine(Formatting.FormatOther(emp));
-        }
-        else
-        {
-            Console.MarkupLine($"Fant deg ikke i Floq på epost {session.Email}");
-        }
+        Console.MarkupLine(emp != null
+            ? Formatting.FormatOther(emp)
+            : $"Fant deg ikke i Floq på epost {session.Email}");
     }
 }

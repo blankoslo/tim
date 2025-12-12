@@ -12,8 +12,15 @@ internal partial class Authentications
         Console.WriteLine("\n----- session deserialized:-----");
         var session = await UserSecretsManager.GetFloqSession(token);
         if(session is not null)
+        {
             Console.WriteLine(Pretty(session));
+        }
+
         return;
-        string Pretty(UserSession s) => s.ToString().Replace(",", "\n").Replace("{", "\n{\n").Replace("}", "\n}");
+
+        string Pretty(UserSession s)
+        {
+            return s.ToString().Replace(",", "\n").Replace("{", "\n{\n").Replace("}", "\n}");
+        }
     }
 }

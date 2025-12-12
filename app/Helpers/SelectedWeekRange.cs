@@ -1,4 +1,3 @@
-
 [Flags]
 public enum SelectedRange
 {

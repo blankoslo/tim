@@ -14,13 +14,13 @@ internal class Reports
         var client = HttpClientFactory.CreateReportsClientForUser(session);
 
         var projectIds = new List<string>();
-        if (System.Console.IsInputRedirected)
+        if(System.Console.IsInputRedirected)
         {
             ctx.StandardInput(line =>
             {
-                if (!string.IsNullOrWhiteSpace(line.line))
+                if(!string.IsNullOrWhiteSpace(line.line))
                 {
-                    if (line.line.Length != 7)
+                    if(line.line.Length != 7)
                     {
                         throw new Exception("BooM! Invalid project ID from piped input.");
                     }
@@ -29,12 +29,12 @@ internal class Reports
                 }
             });
         }
-        else if (!string.IsNullOrWhiteSpace(projectId))
+        else if(!string.IsNullOrWhiteSpace(projectId))
         {
             projectIds.Add(projectId);
         }
 
-        if (projectIds.Count == 0)
+        if(projectIds.Count == 0)
         {
             Console.MarkupLine("[red]❌ ProsjektID må oppgis som argument eller via stdin[/]");
             return -1;
@@ -50,14 +50,14 @@ internal class Reports
                 _ => throw new ArgumentOutOfRangeException(nameof(range), range, null)
             };
         }
-        catch (Exception)
+        catch(Exception)
         {
             Console.MarkupLine("[red]❌ Ugyldig range valgt[/]");
             return -1;
         }
 
         var tasks = new List<Task>();
-        foreach (var pid in projectIds)
+        foreach(var pid in projectIds)
         {
             var t = Download(client, from, to, pid, outputPath, token);
             tasks.Add(t);
@@ -77,7 +77,7 @@ internal class Reports
 
         var folder = string.IsNullOrWhiteSpace(outputFolder) ? "." : outputFolder;
 
-        if (!Directory.Exists(folder))
+        if(!Directory.Exists(folder))
         {
             Directory.CreateDirectory(folder);
         }

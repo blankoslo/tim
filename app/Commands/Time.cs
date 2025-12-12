@@ -1,5 +1,6 @@
 [RegisterCommands]
 [ConsoleAppFilter<AuthenticationFilter>]
 [ConsoleAppFilter<AddStdinToContext>]
-internal partial class Time { }
-
+internal partial class Time
+{
+}

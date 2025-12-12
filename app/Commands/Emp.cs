@@ -10,7 +10,7 @@ internal partial class Emp
         var session = ctx.GetUserSession();
         var client = HttpClientFactory.CreateFloqClientForUser(session);
 
-        if (!employeeId.HasValue)
+        if(!employeeId.HasValue)
         {
             await Me(ctx, token);
             return;

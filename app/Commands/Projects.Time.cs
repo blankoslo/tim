@@ -14,15 +14,15 @@ internal partial class Projects
         var session = ctx.UserSession;
         var projectIds = new List<string>();
 
-        if (System.Console.IsInputRedirected)
+        if(System.Console.IsInputRedirected)
         {
             try
             {
                 ctx.StandardInput(line =>
                 {
-                    if (!string.IsNullOrWhiteSpace(line.line))
+                    if(!string.IsNullOrWhiteSpace(line.line))
                     {
-                        if (line.line.Length != 7)
+                        if(line.line.Length != 7)
                         {
                             throw new Exception("BooM! Invalid project ID length from piped input.");
                         }
@@ -31,7 +31,7 @@ internal partial class Projects
                     }
                 });
             }
-            catch (Exception)
+            catch(Exception)
             {
                 Console.MarkupLine(
                     $"[red]✗[/] Ugyldig prosjektID mottatt fra piped input. Sjekk at hver linje inneholder en gyldig prosjektID på 7 tegn.");
@@ -41,9 +41,9 @@ internal partial class Projects
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
         // If no piped input, use projectId argument
-        if (!projectIds.Any())
+        if(!projectIds.Any())
         {
-            if (!string.IsNullOrWhiteSpace(projectId))
+            if(!string.IsNullOrWhiteSpace(projectId))
             {
                 projectIds.Add(projectId);
             }
@@ -51,7 +51,7 @@ internal partial class Projects
             {
                 var defaultProject = await UserSecretsManager.GetDefaultProject(token);
 
-                if (defaultProject is not null)
+                if(defaultProject is not null)
                 {
                     projectIds.AddRange(defaultProject.Id);
                 }
@@ -66,11 +66,11 @@ internal partial class Projects
 
 
         var dates = GetAllWeekDays(range);
-        if (range is SelectedRange.CurrentMonth or SelectedRange.PreviousMonth)
+        if(range is SelectedRange.CurrentMonth or SelectedRange.PreviousMonth)
         {
             dates = GetAllMonthDays(range);
         }
-        else if (range == SelectedRange.SingleDay)
+        else if(range == SelectedRange.SingleDay)
         {
             dates = new[]
                     {
@@ -81,7 +81,7 @@ internal partial class Projects
         var multipleProjects = projectIds.Count > 1;
 
 
-        foreach (var projId in projectIds)
+        foreach(var projId in projectIds)
         {
             await ProcessProject(projId, range, dates, client, multipleProjects, token);
         }
@@ -98,7 +98,7 @@ internal partial class Projects
     {
         var report = await CreateProjectReport(projectId, range, dates, client, ct);
 
-        if (report != null && report.HasTimeEntries())
+        if(report != null && report.HasTimeEntries())
         {
             Table table = new();
             var caption = GetProjectCaption(report, dates);
@@ -109,7 +109,7 @@ internal partial class Projects
         }
         else
         {
-            if (!multipleProjects)
+            if(!multipleProjects)
             {
                 Console.MarkupLine($"[red]Ingen førte timer[/] for prosjekt [purple]{projectId}[/] i perioden");
             }
@@ -120,7 +120,7 @@ internal partial class Projects
     {
         var dateInRange = dates.First();
 
-        if (!report.IsMonthly())
+        if(!report.IsMonthly())
         {
             var weekNo = ISOWeekShim.GetWeekOfYear(dateInRange);
             return $"Prosjekt {report.ProjectId} – Uke {weekNo}";
@@ -148,7 +148,7 @@ internal partial class Projects
             .Distinct()
             .ToList();
 
-        if (!employeeIds.Any())
+        if(!employeeIds.Any())
         {
             return null;
         }
@@ -156,9 +156,9 @@ internal partial class Projects
         Dictionary<(int EmployeeId, DateOnly Day), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks =
             new();
 
-        foreach (var empId in employeeIds)
+        foreach(var empId in employeeIds)
         {
-            foreach (var day in dates)
+            foreach(var day in dates)
             {
                 var t = client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
                 allTasks.Add((empId, day), t);
@@ -170,19 +170,19 @@ internal partial class Projects
         Dictionary<int, EmployeeInfo> employeesWithHours = new();
         Dictionary<EmployeeDay, ProjectTimeforing> timerPrAnsatt = new();
 
-        foreach (var kvp in allTasks)
+        foreach(var kvp in allTasks)
         {
             var (empId, day) = kvp.Key;
             var entries = await kvp.Value;
             var projectEntry = entries.FirstOrDefault(e => e.Id.Equals(projectId, StringComparison.OrdinalIgnoreCase));
 
-            if (projectEntry != null && projectEntry.Minutes > 0)
+            if(projectEntry != null && projectEntry.Minutes > 0)
             {
                 // Add employee to our list if not already there
-                if (!employeesWithHours.ContainsKey(empId))
+                if(!employeesWithHours.ContainsKey(empId))
                 {
                     var empOnProj = employeesOnProjects.FirstOrDefault(e => e.Id == empId);
-                    if (empOnProj != null)
+                    if(empOnProj != null)
                     {
                         employeesWithHours[empId] = new EmployeeInfo(empId, empOnProj.First_Name, empOnProj.Last_Name);
                     }
@@ -193,17 +193,17 @@ internal partial class Projects
             }
         }
 
-        if (!employeesWithHours.Any())
+        if(!employeesWithHours.Any())
         {
             return null;
         }
 
-        foreach (var emp in employeesWithHours.Values)
+        foreach(var emp in employeesWithHours.Values)
         {
-            foreach (var day in dates)
+            foreach(var day in dates)
             {
                 var key = new EmployeeDay(emp.Id, day);
-                if (!timerPrAnsatt.ContainsKey(key))
+                if(!timerPrAnsatt.ContainsKey(key))
                 {
                     timerPrAnsatt[key] = new ProjectTimeforing(day, 0, 0);
                 }
@@ -223,7 +223,7 @@ internal partial class Projects
         table.AddColumn("");
         table.Columns[0].Width(25);
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
             var day1 = day;
             var isWeekend = day1.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
@@ -235,17 +235,17 @@ internal partial class Projects
                     : new Markup($"{day1:dd.MM}");
             });
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
             {
                 table.AddColumn("");
             }
         }
 
-        foreach (var emp in report.Employees)
+        foreach(var emp in report.Employees)
         {
             List<string> row = new() { $"[white]{emp.FirstName} {Shorten(emp.LastName, 10)}[/]" };
 
-            foreach (var day in report.Days)
+            foreach(var day in report.Days)
             {
                 var entry = report.GetEntry(new EmployeeDay(emp.Id, day));
                 var item = entry switch
@@ -255,7 +255,7 @@ internal partial class Projects
                 };
                 row.Add(item);
 
-                if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
+                if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
                 {
                     row.Add("");
                 }
@@ -268,12 +268,12 @@ internal partial class Projects
         List<string> sumRow = new() { "[green]Daglig sum[/]" };
         var dailyTotals = new Dictionary<DateOnly, decimal>();
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
             var sum = report.GetDailyHoursSum(day);
             dailyTotals[day] = sum;
 
-            if (sum > 0)
+            if(sum > 0)
             {
                 sumRow.Add($"[green]{sum:F1}[/]");
             }
@@ -282,7 +282,7 @@ internal partial class Projects
                 sumRow.Add("[dim]-[/]");
             }
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
             {
                 sumRow.Add("");
             }
@@ -294,12 +294,12 @@ internal partial class Projects
         List<string> cumulativeRow = new() { "[dim]Ukesum[/]" };
         decimal runningTotal = 0;
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
             var hours = dailyTotals[day];
             runningTotal += hours;
 
-            if (day.DayOfWeek == DayOfWeek.Sunday && runningTotal > 0)
+            if(day.DayOfWeek == DayOfWeek.Sunday && runningTotal > 0)
             {
                 cumulativeRow.Add($"[blue]{runningTotal:F1}[/]");
             }
@@ -308,7 +308,7 @@ internal partial class Projects
                 cumulativeRow.Add("[dim][/]");
             }
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
             {
                 runningTotal = 0;
                 cumulativeRow.Add("");
@@ -321,22 +321,22 @@ internal partial class Projects
         var grandTotal = dailyTotals.Values.Sum();
         List<string> totalRow = new() { "[bold yellow]Total[/]" };
 
-        foreach (var day in report.Days)
+        foreach(var day in report.Days)
         {
             totalRow.Add("[dim][/]");
 
-            if (report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
+            if(report.IsMonthly() && day.DayOfWeek == DayOfWeek.Sunday)
             {
                 totalRow.Add("");
             }
         }
 
         // Replace the last non-empty cell with the grand total
-        if (grandTotal > 0)
+        if(grandTotal > 0)
         {
             // Find the last index that is not a separator
             var lastIndex = totalRow.Count - 1;
-            while (lastIndex > 0 && totalRow[lastIndex] == "")
+            while(lastIndex > 0 && totalRow[lastIndex] == "")
             {
                 lastIndex--;
             }
@@ -357,7 +357,7 @@ internal partial class Projects
     {
         var dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        if (week == SelectedRange.PreviousWeek)
+        if(week == SelectedRange.PreviousWeek)
         {
             dateInWeek = dateInWeek.AddDays(-7);
         }
@@ -376,7 +376,7 @@ internal partial class Projects
     private static DateOnly[] GetAllMonthDays(SelectedRange? week)
     {
         var dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (week == SelectedRange.PreviousMonth)
+        if(week == SelectedRange.PreviousMonth)
         {
             dateInMonth = dateInMonth.AddMonths(-1);
         }

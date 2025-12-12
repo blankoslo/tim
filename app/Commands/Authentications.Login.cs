@@ -26,19 +26,23 @@ internal partial class Authentications
             .Spinner(Spinner.Known.Star)
             .StartAsync("Starter login-flyt…", async ctx1 =>
             {
-                int port = FindFirstAvailablePort();
+                var port = FindFirstAvailablePort();
                 var redirectUrl = $"http://localhost:{port}/";
                 using var http = new HttpListener();
                 http.Prefixes.Add(redirectUrl);
                 http.Start();
                 ctx1.Status = "Web-server started for å motta callback";
-                Process.Start(new ProcessStartInfo { FileName = $"https://inni.blank.no/login/oauth?to={redirectUrl}", UseShellExecute = true });
+                Process.Start(new ProcessStartInfo
+                              {
+                                  FileName = $"https://inni.blank.no/login/oauth?to={redirectUrl}",
+                                  UseShellExecute = true
+                              });
                 ctx1.Status = "Venter på at du skal skal fulløre innlogging i browser...";
                 var callback = await http.GetContextAsync().WaitAsync(token);
                 ctx1.Status = "Callback mottatt!";
 
                 var data = await HandleImplicitFlowCallback(callback, token);
-                if (data == null)
+                if(data == null)
                 {
                     ctx1.Status = ":/";
                     Console.MarkupLine($"[red]Innlogging feilet[/].\nPrøv igjen.");
@@ -48,7 +52,7 @@ internal partial class Authentications
                 ctx1.Status = "Sjekker ansatt-basen.";
                 var client = HttpClientFactory.CreateFloqClientForUser(data.AccessToken);
                 var emp = await client.GetEmployeeByEmail(data.UserEmail, token);
-                if (emp == null)
+                if(emp == null)
                 {
                     Console.MarkupLine($"[red]Innlogging feilet[/].\n" +
                                        $"[yellow]Ingen ansatt med e-post: [bold white]{data.UserEmail}[/][/].");
@@ -75,16 +79,18 @@ internal partial class Authentications
         {
             listener.Stop();
         }
+
         return port;
     }
 
-    private static async Task<ImplicitCallbackData?> HandleImplicitFlowCallback(HttpListenerContext context, CancellationToken token)
+    private static async Task<ImplicitCallbackData?> HandleImplicitFlowCallback(HttpListenerContext context,
+        CancellationToken token)
     {
         var query = context.Request.QueryString;
 
         var html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.SuccessInnerHtml);
 
-        if (query["error"] != null)
+        if(query["error"] != null)
         {
             html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.ErrorInnerHtml);
         }
@@ -99,7 +105,7 @@ internal partial class Authentications
         var userEmail = query["user_email"];
         ImplicitCallbackData? data = null;
 
-        if (accessToken is not null && expiryDate is not null && refreshToken is not null && userEmail is not null)
+        if(accessToken is not null && expiryDate is not null && refreshToken is not null && userEmail is not null)
         {
             data = new ImplicitCallbackData(accessToken, expiryDate, refreshToken, userEmail);
         }

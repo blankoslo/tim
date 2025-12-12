@@ -14,7 +14,7 @@ internal partial class Projects
         var projects = await client.GetAllProjectsWithCustomer(token);
         projects = projects.Where(p => p.Active);
 
-        if (!string.IsNullOrEmpty(customer))
+        if(!string.IsNullOrEmpty(customer))
         {
             projects = projects.Where(p => p.Customer.Name.Contains(customer, StringComparison.OrdinalIgnoreCase));
         }
@@ -24,13 +24,13 @@ internal partial class Projects
             .ThenBy(p => p.Id)
             .ThenBy(p => p.Name);
 
-        if (ids)
+        if(ids)
         {
             Console.WriteLine(string.Join(Environment.NewLine, projects.Select(p => p.Id)));
             return -1;
         }
 
-        if (projects.Count() == 0)
+        if(projects.Count() == 0)
         {
             Console.MarkupLine("[yellow]⚠️ Ingen prosjekter funnet[/]");
             return -1;
@@ -43,7 +43,7 @@ internal partial class Projects
             .AddColumn("Prosjekt")
             .AddColumn("Fakturerbart");
 
-        foreach (var proj in projects)
+        foreach(var proj in projects)
         {
             table.AddRow(
                 $"[purple]{proj.Id}[/]",

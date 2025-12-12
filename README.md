@@ -3,30 +3,26 @@
 <img src="./images/tim.png" alt="Bit Icon" width="35%" />
 
 ### tim - timeføring cli for Blank
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-05bd7e.svg)](LICENSE)
 [![Terminal](https://img.shields.io/badge/interface-terminal-05bd7e.svg)](https://github.com/blankoslo/tim)
 [![kjøregår](https://img.shields.io/badge/kjøre-går-FFFCB6.svg)](https://www.blank.no/tim-the-incredible-machine)
 [![Terminal](https://img.shields.io/badge/tim-the_incredible_machine_-DA2FBF.svg)](https://www.google.com/search?q=tim+the+incredible+machine)
 
-
-
-[features](#-features) • [installasjon](#-installasjon) • [ bruk](#-bruk) 
+[features](#-features) • [installasjon](#-installasjon) • [ bruk](#-bruk)
 
 <img src="./images/tim-reel.gif" alt="Bit Icon" width="100%" />
 </div>
 
-
-
 ## ✨ features
 
-| **Feature**                             | **Description**                                                                                |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **⏲️ Timeføring**               | Før timer for 1 dag, hele uka, eller hele måneden                                      |
-| **🗓️ Rapporter**              | Gjennomgå timeføring for deg selv, eller alle hos din kunde/prosjekt               |
-| **🤓 Ingen browser**         | Du slipper browserens tamme klør                                      |
-| **🌊 Pipe-støtte**               | Kombiner med andre CLI-verktøy for avanserte arbeidsflyter                                      |
-| **🕊️ cURL**               | Støtte for å cURL'e fritt mot PostgREST-APIet dersom du ønsker å gå ned på metallet|
-
+| **Feature**          | **Description**                                                                     |
+|----------------------|-------------------------------------------------------------------------------------|
+| **⏲️ Timeføring**    | Før timer for 1 dag, hele uka, eller hele måneden                                   |
+| **🗓️ Rapporter**    | Gjennomgå timeføring for deg selv, eller alle hos din kunde/prosjekt                |
+| **🤓 Ingen browser** | Du slipper browserens tamme klør                                                    |
+| **🌊 Pipe-støtte**   | Kombiner med andre CLI-verktøy for avanserte arbeidsflyter                          |
+| **🕊️ cURL**         | Støtte for å cURL'e fritt mot PostgREST-APIet dersom du ønsker å gå ned på metallet |
 
 ## 🚀 installasjon
 
@@ -36,19 +32,19 @@ brew tap blankoslo/tools git@github.com:blankoslo/homebrew-tools.git
 brew install blankoslo/tools/tim
 ```
 
-Evt last ned filene fra [releases](https://github.com/blankoslo/tim/releases/latest). 
+Evt last ned filene fra [releases](https://github.com/blankoslo/tim/releases/latest).
 Last ned siste versjon og hiv den i en mappe som er i PATH-en din.
-
 
 *Windows*
 <details>
 
 <summary>Windows-greier her</summary>
 
-
 ### Alternativ 1:* Som et .NET tool (.NET 9 el 10).
 
-NuGet'en finnes i GitHub Packages feed'en til Blank Oslo (krever .NET 9 eller .NET 10). Autentisering mot feeed krever et _GitHub Classic Token_ (`<GH_PAT>`)  som du kan opprette [her](https://github.com/settings/tokens). Husk å gi den `read:packages` og litt varighet.
+NuGet'en finnes i GitHub Packages feed'en til Blank Oslo (krever .NET 9 eller .NET 10). Autentisering mot feeed krever
+et _GitHub Classic Token_ (`<GH_PAT>`)  som du kan opprette [her](https://github.com/settings/tokens). Husk å gi den
+`read:packages` og litt varighet.
 
 ```bash
 dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
@@ -66,14 +62,13 @@ dotnet tool install --global BlankDev.Tools.Tim \
 # Evt one-off via `dnx` 
 dnx BlankDev.Tools.Tim --add-source github
 ```
+
 ### Alt 2 - last ned windows `.exe`
 
 Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/latest). Legg evt til i PATH.
 
 
 </details>
-
-
 
 ## 💻 Bruk
 
@@ -113,10 +108,9 @@ tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r pr
 <img src="./images/MonthlyReportSample.png" width="100%" />
 </div>
 
-
 # tim curl
 
-`tim curl` gjør requests rett mot PostgREST APIet med innloggede credentials. 
+`tim curl` gjør requests rett mot PostgREST APIet med innloggede credentials.
 
 ```bash
 # Hva er det dissa folka driver med egentlig?
@@ -150,8 +144,9 @@ tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 
 ### Floq API tips
 
-Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne _kan_ lastes opp i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [`github.com/plutov/oq`]((https://github.com/plutov/oq))
-
+Floq har en [Swagger spec](https://api-prod.floq.no/) som du kan utforske. Denne _kan_ lastes opp
+i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [
+`github.com/plutov/oq`]((https://github.com/plutov/oq))
 
 ```bash
 brew install plutov/tap/oq 
