@@ -13,9 +13,7 @@ internal partial class Projects
     {
         var session = ctx.UserSession;
         var projectIds = new List<string>();
-        Console.WriteLine("Running");
 
-        // Support stdin for multiple projectIds
         if (System.Console.IsInputRedirected)
         {
             try
@@ -147,7 +145,6 @@ internal partial class Projects
             return null;
         }
 
-        // Fetch time entries for each employee on each day, filtering by projectId
         Dictionary<(int EmployeeId, DateOnly Day), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
 
         foreach (var empId in employeeIds)
@@ -161,7 +158,6 @@ internal partial class Projects
 
         await Task.WhenAll(allTasks.Values);
 
-        // Build employee entries filtered by projectId
         Dictionary<int, EmployeeInfo> employeesWithHours = new();
         Dictionary<EmployeeDay, ProjectTimeforing> timerPrAnsatt = new();
 
@@ -192,7 +188,6 @@ internal partial class Projects
             return null;
         }
 
-        // Fill in missing days with zero entries for employees who have at least some hours
         foreach (var emp in employeesWithHours.Values)
         {
             foreach (var day in dates)
@@ -357,7 +352,6 @@ internal partial class Projects
         return weekDaysForRange;
     }
 
-    /// <summary>Gets all days in the month including weekends</summary>
     private static DateOnly[] GetAllMonthDays(SelectedRange? week)
     {
         DateOnly dateInMonth = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -379,7 +373,6 @@ internal partial class Projects
         return monthDaysForRange;
     }
 
-    // Records for project-centric report
     record ProjectTimeReport(
         string ProjectId,
         SelectedRange Range,
