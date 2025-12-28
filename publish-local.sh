@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 PROJECT_PATH="./app/Tim.csproj"
 OUT_DIR="$HOME/bin"
 
@@ -5,14 +6,12 @@ OUT_DIR="$HOME/bin"
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
 GIT_SHA=$(git rev-parse --short HEAD)
 VERSION="${1:-${LATEST_TAG}-${GIT_SHA}}"
-
+rm "$OUT_DIR/tim"
+rm -rf "$OUT_DIR/tim.dSYM"
 dotnet publish "$PROJECT_PATH" \
   -c Release \
-  -r osx-arm64 \
+  --os osx \
   -o $OUT_DIR \
-  -p:Version="$VERSION" \
-  -p:PublishSingleFile=true \
-  -p:DebugType=embedded \
-  -p:UserSecretsId=tim-local-dev \
-  --self-contained true
+  -p:Version="$VERSION"
 echo "Local build $VERSION published to $OUT_DIR"
+ls -alh $OUT_DIR
