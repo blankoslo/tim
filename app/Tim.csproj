@@ -5,15 +5,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PublishAot>false</PublishAot>
-    <ReadyToRun>true</ReadyToRun>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <VerifyReferenceAotCompatibility>true</VerifyReferenceAotCompatibility>
     <UserSecretsId>tim-1337</UserSecretsId>
     <AssemblyName>tim</AssemblyName>
     <ProductName>tim</ProductName>
-    <PackAsTool>true</PackAsTool>
     <LangVersion>latest</LangVersion>
     <ToolCommandName>tim</ToolCommandName>
-
     <Authors>blankdev, johnkors</Authors>
     <PackageId>BlankDev.Tools.Tim</PackageId>
     <Description>Floq CLI</Description>
@@ -27,10 +26,8 @@
 
   <ItemGroup>
     <PackageReference Include="ConsoleAppFramework" Version="5.7.13" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0" />
+
   </ItemGroup>
 
   <ItemGroup>

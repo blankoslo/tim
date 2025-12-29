@@ -6,21 +6,66 @@ on:
       - '*'
 
 jobs:
-  release:
+
+  create-draft:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: gh release create ${{ github.ref_name }} --draft --title "${{ github.ref_name }}"
+    env:
+      GH_TOKEN: ${{ github.token }}
+  publish-exes:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            osid: linux
+          - os: windows-latest
+            osid: win
+          - os: macos-latest
+            osid: osx
+
+    runs-on: ${{ matrix.os }}
     env:
       VERSION: ${{ github.ref_name }}
-
     steps:
       - name: Checkout source repo
         uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish script
-        run: ./publish.sh ${{env.VERSION}} ${{ secrets.STORAGE_APIKEY }} ${{ secrets.NUGET_APIKEY }}
+      - name: Publish executables (Windows)
+        if: matrix.os == 'windows-latest'
+        run: ./publish.ps1 ${{env.VERSION}} ${{ secrets.STORAGE_APIKEY }} ${{ matrix.osid }}
+        shell: pwsh
+        env:
+          VERSION: ${{ env.VERSION }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish executables (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: ./publish.sh ${{env.VERSION}} ${{ secrets.STORAGE_APIKEY }} ${{ matrix.osid }}
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
+          GH_TOKEN: ${{ github.token }}
+
+  publish-nuget:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish NuGet tool
+        run: ./publish-nuget.sh ${{env.VERSION}} ${{ secrets.NUGET_APIKEY }}
         env:
           VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ github.token }}

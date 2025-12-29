@@ -1,0 +1,49 @@
+# PowerShell equivalent of publish.sh for Windows
+param(
+    [string]$Version = "0.1.0",
+    [string]$AccountKey = "abc",
+    [string]$OS = "win"
+)
+
+$ProjectPath = "./app/Tim.csproj"
+$OutDir = "./out/exe"
+
+if (Test-Path $OutDir) {
+    Remove-Item $OutDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
+
+$TargetDir = Join-Path $OutDir $OS
+New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+
+Write-Host "Publishing $ProjectPath for $OS ..."
+dotnet publish $ProjectPath `
+    -c Release `
+    --os $OS `
+    -o $TargetDir `
+    -f "net10.0" `
+    -p:Version=$Version
+
+Write-Host "Executables available in $TargetDir"
+
+switch ($OS) {
+    "win" { $Exe = "tim.exe" }
+    default { $Exe = "tim" }
+}
+
+$TarFile = Join-Path $OutDir "tim-$OS.tar.gz"
+
+& tar -czf $TarFile -C $TargetDir $Exe
+
+Write-Host "Uploading tim-$OS.tar.gz to Azure..."
+
+az storage blob upload `
+  --account-name homebrewfiles `
+  --container-name tim `
+  --name "$Version/tim-$OS.tar.gz" `
+  --file $TarFile `
+  --account-key $AccountKey `
+  --overwrite
+
+Write-Host "Uploading tim-$OS.tar.gz to github release"
+& gh release upload --clobber $Version "$TarFile#tim-$OS"

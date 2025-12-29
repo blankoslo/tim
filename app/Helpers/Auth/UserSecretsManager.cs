@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Configuration.UserSecrets;
+
 
 public class UserSecretsManager
 {
@@ -85,7 +85,7 @@ public class UserSecretsManager
         }
         else
         {
-            secrets["DefaultProject"] = JsonSerializer.Serialize(value);
+            secrets["DefaultProject"] = JsonSerializer.Serialize(value, UserSecretsJsonSerializerContext.Default.UserDefaultedProject);
         }
 
         var secretsJson = ToJson(secrets);
@@ -103,7 +103,7 @@ public class UserSecretsManager
 
         try
         {
-            if(JsonSerializer.Deserialize<UserDefaultedProject>(projectJson) is { } project)
+            if(JsonSerializer.Deserialize<UserDefaultedProject>(projectJson, UserSecretsJsonSerializerContext.Default.UserDefaultedProject) is { } project)
             {
                 return project;
             }
@@ -144,7 +144,7 @@ public class UserSecretsManager
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "blank",
             "tim",
-            Assembly.GetExecutingAssembly().GetCustomAttribute<UserSecretsIdAttribute>()!.UserSecretsId,
+            "tim-deploy",
             "secrets.json");
 
         return path;
@@ -198,7 +198,7 @@ public class UserSecretsManager
         }
 
         var response = await AuthClient.PostAsJsonAsync("/login/oauth/refresh",
-            new { refresh_token = currentSession.RefreshToken }, token);
+            new RefreshTokenRequest(currentSession.RefreshToken), UserSecretsJsonSerializerContext.Default.RefreshTokenRequest, token);
 
         if(!response.IsSuccessStatusCode)
         {
@@ -206,7 +206,7 @@ public class UserSecretsManager
             return null;
         }
 
-        var refreshResponse = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(token);
+        var refreshResponse = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(UserSecretsJsonSerializerContext.Default.RefreshTokenResponse,token);
         if(refreshResponse == null)
         {
             return null;
@@ -225,12 +225,6 @@ public class UserSecretsManager
 
         return await GetFloqSession(token);
     }
-
-    private record RefreshTokenResponse(
-        [property: JsonPropertyName("access_token")]
-        string AccessToken,
-        [property: JsonPropertyName("expiry_date")]
-        string ExpiryDate);
 
     public static async Task RemoveFloqSession(CancellationToken token)
     {
@@ -283,7 +277,28 @@ public record UserSession(
     }
 }
 
+public record RefreshTokenRequest(
+    [property: JsonPropertyName("refresh_token")]
+    string RefreshToken);
+
+public record RefreshTokenResponse(
+    [property: JsonPropertyName("access_token")]
+    string AccessToken,
+    [property: JsonPropertyName("expiry_date")]
+    string ExpiryDate);
+
 // Stored as JSON in file, nb, be backwards compatitble
 public record UserDefaultedProject(string Id, string Project, string Customer, string CustomerId);
 
 public record ImplicitCallbackData(string AccessToken, string ExpireDate, string RefreshToken, string UserEmail);
+
+[JsonSourceGenerationOptions(
+    PropertyNameCaseInsensitive = true,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase
+)]
+[JsonSerializable(typeof(UserDefaultedProject))]
+[JsonSerializable(typeof(RefreshTokenRequest))]
+[JsonSerializable(typeof(RefreshTokenResponse))]
+internal partial class UserSecretsJsonSerializerContext : JsonSerializerContext
+{
+}
