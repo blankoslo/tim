@@ -3,40 +3,32 @@ using System.Net.Http.Headers;
 
 public class HttpClientFactory
 {
-    private static FloqClient? _clientSingletion;
-    private static FloqReportsApiClient? _clientReportsSingletion;
-
-    private static readonly HttpClient FloqClient = new() { BaseAddress = new Uri("https://api-prod.floq.no") };
-
-    private static readonly HttpClient ReportsClient = new()
+    private static HttpClient FloqClient()
     {
-        BaseAddress = new Uri("https://reports-api-prod.floq.no")
-    };
+        var handler = new SocketsHttpHandler { MaxConnectionsPerServer = 6 };
+        return new HttpClient(handler) { BaseAddress = new Uri("https://api-prod.floq.no") };
+    }
+
+    private static HttpClient ReportsClient()
+    {
+        var handler = new SocketsHttpHandler { MaxConnectionsPerServer = 6 };
+        return new HttpClient(handler) { BaseAddress = new Uri("https://reports-api-prod.floq.no") };
+    }
 
     public static FloqClient CreateFloqClientForUser(UserSession session)
     {
-        if(_clientSingletion == null)
-        {
-            _clientSingletion = CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
-        }
-
-        return _clientSingletion;
+        return CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
     }
 
     public static FloqReportsApiClient CreateReportsClientForUser(UserSession session)
     {
-        if(_clientReportsSingletion == null)
-        {
-            _clientReportsSingletion = SetupHttpClient<FloqReportsApiClient>(ReportsClient, session.AccessToken,
+        return SetupHttpClient<FloqReportsApiClient>(ReportsClient(), session.AccessToken,
                 session.EmployeeId, c => new FloqReportsApiClient(c));
-        }
-
-        return _clientReportsSingletion;
     }
 
     public static FloqClient CreateFloqClientForUser(string accessToken, int? employeeId = null)
     {
-        return SetupHttpClient<FloqClient>(FloqClient, accessToken, employeeId, http => new FloqClient(http));
+        return SetupHttpClient<FloqClient>(FloqClient(), accessToken, employeeId, http => new FloqClient(http));
     }
 
     private static T SetupHttpClient<T>(HttpClient client, string accessToken, int? employeeId,

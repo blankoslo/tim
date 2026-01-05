@@ -153,6 +153,7 @@ internal partial class Projects
             return null;
         }
 
+        var semaphore = new SemaphoreSlim(20); // Limit to 20 concurrent requests
         Dictionary<(int EmployeeId, DateOnly Day), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks =
             new();
 
@@ -160,8 +161,19 @@ internal partial class Projects
         {
             foreach(var day in dates)
             {
-                var t = client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
-                allTasks.Add((empId, day), t);
+                await semaphore.WaitAsync(ct);
+                var task = Task.Run(async () =>
+                {
+                    try
+                    {
+                        return await client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }, ct);
+                allTasks.Add((empId, day), task);
             }
         }
 
