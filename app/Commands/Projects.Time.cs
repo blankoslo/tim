@@ -1,4 +1,5 @@
 using System.Globalization;
+using Spectre.Console.Extensions;
 
 internal partial class Projects
 {
@@ -96,7 +97,9 @@ internal partial class Projects
         bool multipleProjects,
         CancellationToken ct)
     {
-        var report = await CreateProjectReport(projectId, range, dates, client, ct);
+
+        var report = await CreateProjectReport(projectId, range, dates, client, ct)
+            .Spinner();
 
         if(report != null && report.HasTimeEntries())
         {
@@ -153,27 +156,18 @@ internal partial class Projects
             return null;
         }
 
-        var semaphore = new SemaphoreSlim(20); // Limit to 20 concurrent requests
-        Dictionary<(int EmployeeId, DateOnly Day), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks =
-            new();
+        const int MaxConcurrency = 6;
 
-        foreach(var empId in employeeIds)
+        using var semaphore = new SemaphoreSlim(MaxConcurrency);
+
+        var allTasks = new Dictionary<(int, DateOnly), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
+
+        foreach (var empId in employeeIds)
         {
-            foreach(var day in dates)
+            foreach (var day in dates)
             {
-                await semaphore.WaitAsync(ct);
-                var task = Task.Run(async () =>
-                {
-                    try
-                    {
-                        return await client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }, ct);
-                allTasks.Add((empId, day), task);
+                var t= GetWithThrottle(client, empId, day, semaphore, ct);
+                allTasks.Add((empId, day), t);
             }
         }
 
@@ -228,6 +222,24 @@ internal partial class Projects
             dates,
             employeesWithHours.Values.OrderBy(e => e.LastName).ThenBy(e => e.FirstName).ToList(),
             timerPrAnsatt);
+    }
+
+    private static async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetWithThrottle(
+        FloqClient client,
+        int empId,
+        DateOnly day,
+        SemaphoreSlim semaphore,
+        CancellationToken ct)
+    {
+        await semaphore.WaitAsync(ct);
+        try
+        {
+            return await client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     private static void RenderProjectTable(Table table, ProjectTimeReport report)
