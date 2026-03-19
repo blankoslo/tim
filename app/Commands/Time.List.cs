@@ -15,14 +15,37 @@ internal partial class Time
         string? customer = null,
         CancellationToken token = default)
     {
-        await ListPeriod(ctx, range, emp, customer, token);
+        await ListPeriod(ctx, range, employeeId: emp, customer: customer, ct: token);
     }
 
     internal static async Task ListPeriod(ConsoleAppContext consoleCtx,
         SelectedRange range,
+        DateOnly? specificDate = null,
         int? employeeId = null,
         string? customer = null,
         CancellationToken ct = default)
+    {
+        var dates = specificDate.HasValue
+            ? GetWeekDaysForDate(specificDate.Value)
+            : GetDatesToWrite(range);
+        await ListPeriod(consoleCtx, dates, employeeId, customer, ct);
+    }
+
+    private static DateOnly[] GetWeekDaysForDate(DateOnly date)
+    {
+        var year = ISOWeekShim.GetYear(date);
+        var weekNo = ISOWeekShim.GetWeekOfYear(date);
+        return Enumerable.Range(1, 5)
+            .Select(d => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)d)))
+            .ToArray();
+    }
+
+    private static async Task ListPeriod(ConsoleAppContext consoleCtx,
+        DateOnly[] dates,
+        int? employeeId = null,
+        string? customer = null,
+        CancellationToken ct = default,
+        SelectedRange range = SelectedRange.CurrentWeek)
     {
         var session = consoleCtx.UserSession;
         var employeeIds = new List<int>();
@@ -38,16 +61,15 @@ internal partial class Time
             });
         }
 
-        // 2) If no piped input, use employeeId argument or fallback to logged-in
         if(!employeeIds.Any())
         {
             if(employeeId != null)
             {
-                employeeIds.Add(employeeId.Value); // argument
+                employeeIds.Add(employeeId.Value);
             }
             else
             {
-                employeeIds.Add(session.EmployeeId); // fallback
+                employeeIds.Add(session.EmployeeId);
             }
         }
 
@@ -59,7 +81,7 @@ internal partial class Time
                 Console.WriteLine();
             }
 
-            await ProcessEmployee(range, empId, customer, ct, session, client, employeeIds.Count > 1);
+            await ProcessEmployee(dates, empId, customer, ct, session, client, employeeIds.Count > 1, range);
 
             if(employeeIds.Count > 1)
             {
@@ -68,11 +90,11 @@ internal partial class Time
         }
     }
 
-    private static async Task ProcessEmployee(SelectedRange range, int? employeeId, string? customer,
+    private static async Task ProcessEmployee(DateOnly[] dates, int? employeeId, string? customer,
         CancellationToken ct,
-        UserSession session, FloqClient client, bool multipleEmployeeOutput)
+        UserSession session, FloqClient client, bool multipleEmployeeOutput,
+        SelectedRange range = SelectedRange.CurrentWeek)
     {
-        var dates = GetDatesToWrite(range);
         var empId = employeeId ?? session.EmployeeId;
 
         var report = await CreateReport(range, dates, client, empId, customer, ct);
@@ -342,20 +364,9 @@ internal partial class Time
     public static DateOnly[] GetWeekDays(SelectedRange? week)
     {
         var dateInWeek = DateOnly.FromDateTime(DateTime.UtcNow);
-
         if(week == SelectedRange.PreviousWeek)
-        {
             dateInWeek = dateInWeek.AddDays(-7);
-        }
-
-        var year = ISOWeekShim.GetYear(dateInWeek);
-        var weekNo = ISOWeekShim.GetWeekOfYear(dateInWeek);
-
-        var weekDaysForRange = Enumerable.Range(1, 5)
-            .Select(dayOfWeek => DateOnly.FromDateTime(ISOWeek.ToDateTime(year, weekNo, (DayOfWeek)dayOfWeek)))
-            .ToArray();
-
-        return weekDaysForRange;
+        return GetWeekDaysForDate(dateInWeek);
     }
 
     public static DateOnly[] GetMonthDays(SelectedRange? week)

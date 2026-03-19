@@ -33,25 +33,16 @@ internal partial class Time
         CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
-        var displayList = mode switch
-        {
-            SelectedRange.SingleDay => SelectedRange.CurrentWeek,
-            null => SelectedRange.CurrentWeek,
-            _ => mode.Value
-        };
-        await ListPeriod(ctx, displayList, ct: token);
-
-        var currentYear = DateTime.UtcNow.Year;
 
         DateOnly? specificDate = null;
 
         if(userDefinedDateStr is not null)
         {
-            var couldParse =
-                DateOnly.TryParseExact($"{currentYear}.{userDefinedDateStr}", "yyyy.dd.MM", out var parsedDate);
-            if(couldParse)
+            var currentYear = DateTime.UtcNow.Year;
+            if(DateOnly.TryParseExact($"{currentYear}.{userDefinedDateStr}", "yyyy.dd.MM", out var parsedDate))
             {
                 specificDate = parsedDate;
+                mode = SelectedRange.SingleDay;
             }
             else
             {
@@ -60,6 +51,13 @@ internal partial class Time
                 return;
             }
         }
+
+        var displayRange = mode switch
+        {
+            SelectedRange.SingleDay or null => SelectedRange.CurrentWeek,
+            _ => mode.Value
+        };
+        await ListPeriod(ctx, displayRange, specificDate, ct: token);
 
         var datesToWrite = GetDatesToWrite(mode, specificDate);
         var hoursToWrite = hours ?? 7.5m;
@@ -139,7 +137,7 @@ internal partial class Time
         await WriteEntriesForDates(projectToWriteOn, datesToWrite, session, hoursToWrite, skipConfirmations ?? true,
             token);
 
-        await ListPeriod(ctx, displayList, ct: token);
+        await ListPeriod(ctx, displayRange, specificDate, ct: token);
         if(datesToWrite.Length == 1)
         {
             Console.WriteLine($"Førte {hoursToWrite} på {projectToWriteOn} den {datesToWrite[0]:dd.MM} ");
