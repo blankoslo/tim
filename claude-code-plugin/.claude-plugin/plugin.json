@@ -10,6 +10,5 @@
   "repository": "https://github.com/blankoslo/tim",
   "license": "MIT",
   "keywords": ["timeføring", "blank", "kjøregår"],
-  "commands": ["./commands/log-hours.md"],
   "skills": "./skills/"
 }
