@@ -1,8 +1,7 @@
 ---
 name: log-hours
 description: Log, view, and manage work hours using the 'tim' CLI tool. Use this skill whenever the user wants to register hours, check what they've logged, log time on a project, track hours for a client, or do anything related to time tracking — even if they just say "log hours", "føre timer", "I worked today", or mention a project name alongside time.
-allowedTools:
-  - Bash(tim *)
+allowed-tools: Bash(tim *)
 ---
 
 # Log Hours (tim CLI)

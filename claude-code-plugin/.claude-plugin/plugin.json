@@ -1,0 +1,16 @@
+{
+  "name": "tim",
+  "description": "Hjelper til med timeføring i Blank",
+  "author": {
+    "name": "John",
+    "email": "john.korsnes@blank.no",
+    "url": "https://github.com/johnkors"
+  },
+  "homepage": "https://github.com/blankoslo/tim",
+  "repository": "https://github.com/blankoslo/tim",
+  "license": "MIT",
+  "keywords": ["timeføring", "blank", "kjøregår"],
+  "commands": ["./commands/log-hours.md"],
+  "agents": "./agents/",
+  "skills": "./skills/"
+}
