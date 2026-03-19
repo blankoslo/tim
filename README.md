@@ -24,6 +24,15 @@
 | **🌊 Pipe-støtte**   | Kombiner med andre CLI-verktøy for avanserte arbeidsflyter                          |
 | **🕊️ cURL**         | Støtte for å cURL'e fritt mot PostgREST-APIet dersom du ønsker å gå ned på metallet |
 
+## 🤖 Claude Code skill
+
+Bruk `tim` direkte fra Claude Code med [log-hours-skillen](skill/SKILL.md):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blankoslo/tim/main/skill/SKILL.md \
+  -o ~/.claude/skills/log-hours/SKILL.md --create-dirs
+```
+
 ## 🚀 installasjon
 
 ```bash
