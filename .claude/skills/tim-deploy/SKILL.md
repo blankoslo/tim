@@ -39,6 +39,14 @@ git -C "$TIM_REPO" log <latest-tag>..HEAD --oneline
 
 If there are **no new commits**, inform the user and abort — there is nothing to release.
 
+Even if there are new commits, check whether any of them touch the `app/` directory — only changes there affect tim's behavior:
+
+```bash
+git -C "$TIM_REPO" diff <latest-tag>..HEAD --name-only | grep '^app/'
+```
+
+If no `app/` files changed, inform the user that there are no user-facing changes and abort.
+
 If there are new commits, show the latest tag and the commit list to the user, then ask what version to release (patch / minor / major bump, or an explicit version number). Wait for confirmation before proceeding.
 
 Also verify that all local commits are pushed to the remote before tagging:
