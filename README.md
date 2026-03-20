@@ -24,17 +24,7 @@
 | **🌊 Pipe-støtte**   | Kombiner med andre CLI-verktøy for avanserte arbeidsflyter                          |
 | **🕊️ cURL**         | Støtte for å cURL'e fritt mot PostgREST-APIet dersom du ønsker å gå ned på metallet |
 
-## 🤖 Claude Code plugin
 
-Bruk `tim` direkte fra Claude Code via [Blank sitt claude-marketplace](https://github.com/blankoslo/claude-marketplace):
-
-```bash
-/plugin marketplace add blankoslo/claude-marketplace
-/plugin install tim
-```
-
-Dette installerer bl.a. `log-hours`-skillen som lar deg føre timer direkte fra Claude Code.
-```
 
 
 ## 🚀 installasjon
@@ -45,45 +35,15 @@ brew tap blankoslo/tools git@github.com:blankoslo/homebrew-tools.git
 brew install blankoslo/tools/tim
 ```
 
-Evt last ned filene fra [releases](https://github.com/blankoslo/tim/releases/latest).
-Last ned siste versjon og hiv den i en mappe som er i PATH-en din.
-
-*Windows*
-<details>
-
-<summary>Windows-greier her</summary>
-
-### Alternativ 1:* Som et .NET tool (.NET 9 el 10).
-
-NuGet'en finnes i GitHub Packages feed'en til Blank Oslo (krever .NET 9 eller .NET 10). Autentisering mot feeed krever
-et _GitHub Classic Token_ (`<GH_PAT>`)  som du kan opprette [her](https://github.com/settings/tokens). Husk å gi den
-`read:packages` og litt varighet.
+_Valgfritt_: Bruk `tim` i Claude Code via [Blank sitt claude-marketplace](https://github.com/blankoslo/claude-marketplace). Skillen gir Claude et grunnkurs i `tim`,  så **du** slipper :) .
 
 ```bash
-dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
- --username dontcare \
- --password <GH_PAT> \
- --store-password-in-clear-text \
- --name github \
-
-dotnet tool install --global BlankDev.Tools.Tim --source "github"
-
-# Nedlasted nuget fra Releases:
-dotnet tool install --global BlankDev.Tools.Tim \
- --source "/downloads/BlankDev.Tools.Tim.0.1.0.nupkg" \
-
-# Evt one-off via `dnx`
-dnx BlankDev.Tools.Tim --add-source github
+/plugin marketplace add blankoslo/claude-marketplace
+/plugin install tim
 ```
 
-### Alt 2 - last ned windows `.exe`
 
-Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/latest). Legg evt til i PATH.
-
-
-</details>
-
-## 💻 Bruk
+## 💻 bruk
 
 ```bash
 # Skriv 7.5 timer på prosjekt ANE1006 for i dag
