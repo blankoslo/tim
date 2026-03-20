@@ -25,13 +25,33 @@ If `tim-brew` is not found at that path, ask the user where it is before proceed
 
 ## Step 1 — Determine the new version
 
-Check the latest released tag:
+Check the latest released tag and whether there are new commits since it:
 
 ```bash
 gh release list --repo blankoslo/tim --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' | cat
 ```
 
-Show the result to the user and ask what version to release (patch / minor / major bump, or an explicit version number). Wait for confirmation before proceeding.
+Then check for commits since that tag:
+
+```bash
+git -C "$TIM_REPO" log <latest-tag>..HEAD --oneline
+```
+
+If there are **no new commits**, inform the user and abort — there is nothing to release.
+
+If there are new commits, show the latest tag and the commit list to the user, then ask what version to release (patch / minor / major bump, or an explicit version number). Wait for confirmation before proceeding.
+
+Also verify that all local commits are pushed to the remote before tagging:
+
+```bash
+git -C "$TIM_REPO" status --short --branch
+```
+
+If there are unpushed commits, push them first:
+
+```bash
+git -C "$TIM_REPO" push
+```
 
 ---
 
