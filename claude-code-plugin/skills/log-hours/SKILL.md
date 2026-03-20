@@ -18,7 +18,7 @@ When the user wants to log hours:
 5. "Previous week" = Monday–Friday only, never weekends (Sat/Sun are never work days)
 6. When logging multiple days, run each `tim write` command separately (not chained with &&) to avoid timeouts
 
-After every hours operation (log, view, change), show the full week overview:
+After every write operation (logging hours, updating entries), always run `tim ls` and display the result as a table so the user can see the full week overview:
 ```bash
 tim ls
 ```
@@ -63,20 +63,22 @@ tim projects -c "Client Name" --ids | tim projects time -r PreviousMonth
 tim projects -c "Client Name" --ids | tim reports project-employee-hours -r previousmonth
 ```
 
-## Raw API access
+## Raw API access (read-only exploration only)
 
-**Always prefer native `tim` commands** (`tim ls`, `tim write`, `tim projects`, `tim emp`, `tim reports`). Only use `tim curl` as a last resort when no native command covers the task.
+`tim curl` er et spørre-/utforskingsverktøy. Bruk det aldri til å føre timer, oppdatere oppføringer eller gjøre noen form for skriveoperasjoner — selv om du ikke finner et passende native command.
+
+`tim curl` is strictly for reading and exploring data. Never use it to create, update, or delete entries.
 
 ```bash
 # Fetch the OpenAPI spec — use this to discover available tables, columns, and RPC functions
 tim curl '/'
 
-# Direct PostgREST queries
+# Direct PostgREST queries (GET/read only)
 tim curl '/employees?select=first_name,last_name'
 tim curl -x post '/rpc/employees_on_projects' --data '{"from_date":"2025-11-01","to_date":"2025-11-30"}'
 ```
 
-When the user asks for something `tim` doesn't support natively: fetch `tim curl '/'` first to explore the schema, then construct the appropriate query.
+When the user asks for something `tim` doesn't support natively: fetch `tim curl '/'` first to explore the schema, then construct the appropriate read query. If the task requires writing data, tell the user that this operation is not supported.
 
 ### Available tables/views
 

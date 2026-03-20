@@ -24,14 +24,18 @@
 | **🌊 Pipe-støtte**   | Kombiner med andre CLI-verktøy for avanserte arbeidsflyter                          |
 | **🕊️ cURL**         | Støtte for å cURL'e fritt mot PostgREST-APIet dersom du ønsker å gå ned på metallet |
 
-## 🤖 Claude Code skill
+## 🤖 Claude Code plugin
 
-Bruk `tim` direkte fra Claude Code med [log-hours-skillen](skill/SKILL.md):
+Bruk `tim` direkte fra Claude Code via [Blank sitt claude-marketplace](https://github.com/blankoslo/claude-marketplace):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/blankoslo/tim/main/skill/SKILL.md \
-  -o ~/.claude/skills/log-hours/SKILL.md --create-dirs
+/plugin marketplace add blankoslo/claude-marketplace
+/plugin install tim
 ```
+
+Dette installerer bl.a. `log-hours`-skillen som lar deg føre timer direkte fra Claude Code.
+```
+
 
 ## 🚀 installasjon
 
@@ -57,18 +61,18 @@ et _GitHub Classic Token_ (`<GH_PAT>`)  som du kan opprette [her](https://github
 
 ```bash
 dotnet nuget add source "https://nuget.pkg.github.com/blankoslo/index.json" \
- --username dontcare \ 
- --password <GH_PAT> \ 
+ --username dontcare \
+ --password <GH_PAT> \
  --store-password-in-clear-text \
- --name github \ 
+ --name github \
 
-dotnet tool install --global BlankDev.Tools.Tim --source "github" 
+dotnet tool install --global BlankDev.Tools.Tim --source "github"
 
 # Nedlasted nuget fra Releases:
 dotnet tool install --global BlankDev.Tools.Tim \
- --source "/downloads/BlankDev.Tools.Tim.0.1.0.nupkg" \ 
- 
-# Evt one-off via `dnx` 
+ --source "/downloads/BlankDev.Tools.Tim.0.1.0.nupkg" \
+
+# Evt one-off via `dnx`
 dnx BlankDev.Tools.Tim --add-source github
 ```
 
@@ -83,11 +87,11 @@ Last ned `tim.exe` fra [releases](https://github.com/blankoslo/tim/releases/late
 
 ```bash
 # Skriv 7.5 timer på prosjekt ANE1006 for i dag
-tim write -p ANE1006 
+tim write -p ANE1006
 
 # Skriv 7.5 timer på default-prosjekt for i dag
 tim set-default ANE1006
-tim write 
+tim write
 
 # Skriv 3.5 timer istedet for defaulten 7,5, idag
 tim write 3,5
@@ -123,13 +127,13 @@ tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r pr
 
 ```bash
 # Hva er det dissa folka driver med egentlig?
-tim curl '/employees?select=first_name,last_name&role=eq.Annet&termination_date=is.null' 
+tim curl '/employees?select=first_name,last_name&role=eq.Annet&termination_date=is.null'
 
 # -x POST for å kalle RPC-metoder:
-$ tim curl -x post '/rpc/employees_on_projects' \ 
+$ tim curl -x post '/rpc/employees_on_projects' \
  --data '{ "from_date": "2025-11-01", "to_date":"2025-11-30"}' | grep "Ruter"
 
-# Finne timeføringa til alle Mags 
+# Finne timeføringa til alle Mags
 tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 
 ╭──────────────────────────────┬───────┬───────┬───────┬───────┬───────╮
@@ -139,7 +143,7 @@ tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 │ Daglig sum                   │  7,5  │  7,5  │  7,5  │  7,5  │  7,5  │
 │ Ukesum                       │       │       │       │       │ 37,5  │
 ╰──────────────────────────────┴───────┴───────┴───────┴───────┴───────╯
-                              uke 49 Backer                             
+                              uke 49 Backer
 ╭───────────────────────────────┬───────┬───────┬───────┬───────┬───────╮
 │                               │ 01.12 │ 02.12 │ 03.12 │ 04.12 │ 05.12 │
 ├───────────────────────────────┼───────┼───────┼───────┼───────┼───────┤
@@ -148,7 +152,7 @@ tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
 │ Daglig sum                    │  7,5  │  8,5  │  7,5  │  7,5  │  7,5  │
 │ Ukesum                        │       │       │       │       │ 38,5  │
 ╰───────────────────────────────┴───────┴───────┴───────┴───────┴───────╯
-                             uke 49 Davidsen       
+                             uke 49 Davidsen
 ```
 
 ### Floq API tips
@@ -158,7 +162,7 @@ i https://editor.swagger.io/, men for å unngå browser-lus (🤮) , bruk [
 `github.com/plutov/oq`]((https://github.com/plutov/oq))
 
 ```bash
-brew install plutov/tap/oq 
+brew install plutov/tap/oq
 ```
 
 ```bash
