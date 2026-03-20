@@ -15,6 +15,36 @@ dotnet run --project app/Tim.csproj -- [args]
 ./publish-local.sh
 ```
 
+# Releasing
+
+1 Check the latest released tag in GitHub:
+
+```bash
+ gh release list --repo blankoslo/tim --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' | cat
+ ```
+
+2 Create a new tag (bump major, minor or patch) and push it the tag:
+
+Ex: If the latest tag is 0.5.2 and we bump patch:
+```bash
+git tag 0.5.3 && git push origin 0.5.3
+```
+
+This will trigger the 'Publish Release' action and create a GitHub release when done.
+
+**Releasing to Homebrew**
+
+The homebrew deploys are dependent on github release assets (tar/zips in the release), so it will need to wait for that to be ready. When they are:
+
+3 Update the `tim-brew` formula with the latest release:
+3.1 Run the `updateformula.sh` in the `tim-brew` repo.
+3.2 Commit and push to GitHub.
+
+
+4 Final step: Add a pretty, human friendly description to the GitHub release of the changes. The GitHub workflow creates a draft release tied to the tag that is available for publish. Update this, and publish it.
+
+
+
 ## Architecture
 
 **tim** is a .NET 10 AOT-compiled CLI for time tracking (timeføring) at Blank Oslo, built on two frameworks:
