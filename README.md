@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./images/tim.png" alt="Bit Icon" width="35%" />
+<img src="./docs/images/tim.png" alt="Bit Icon" width="35%" />
 
 ### tim - timeføring cli for Blank
 
@@ -11,7 +11,7 @@
 
 [features](#-features) • [installasjon](#-installasjon) • [ bruk](#-bruk)
 
-<img src="./images/tim-reel.gif" alt="Bit Icon" width="100%" />
+<img src="./docs/images/tim-reel.gif" alt="Bit Icon" width="100%" />
 </div>
 
 ## ✨ features
@@ -73,12 +73,12 @@ tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r pr
 ```
 
 <div align="center">
-<img src="./images/WeeklyReportSample.png" width="100%" />
+<img src="./docs/images/WeeklyReportSample.png" width="100%" />
 </div>
 
 
 <div align="center">
-<img src="./images/MonthlyReportSample.png" width="100%" />
+<img src="./docs/images/MonthlyReportSample.png" width="100%" />
 </div>
 
 # tim curl
@@ -131,7 +131,7 @@ tim curl '/' | npx swagger2openapi /dev/stdin | oq
 ```
 
 <div align="center">
-<img src="./images/oq.png" width="100%" />
+<img src="./docs/images/oq.png" width="100%" />
 </div>
 
 
