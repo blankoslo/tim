@@ -31,7 +31,7 @@ ${CLAUDE_SKILL_DIR}/scripts/tim-check-release.sh
 
 If there are **no new commits**, inform the user and abort — there is nothing to release.
 
-If no `app/` files changed, inform the user that there are no user-facing changes and abort.
+If no `app/` files changed, inform the user that there are no user-facing changes and **abort immediately — never ask if they want to release anyway**.
 
 If there are new commits, show the latest tag and the commit list to the user, then ask what version to release (patch / minor / major bump, or an explicit version number). Wait for confirmation before proceeding.
 
