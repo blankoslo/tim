@@ -32,12 +32,14 @@ internal partial class Authentications
                 http.Prefixes.Add(redirectUrl);
                 http.Start();
                 ctx1.Status = "Web-server started for å motta callback";
+                var loginUrl = $"https://inni.blank.no/login/oauth?to={redirectUrl}";
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = $"https://inni.blank.no/login/oauth?to={redirectUrl}",
+                    FileName = loginUrl,
                     UseShellExecute = true
                 });
-                ctx1.Status = "Venter på at du skal skal fulløre innlogging i browser...";
+                ctx1.Status = "Venter på at du skal fulløre innlogging i browser...";
+                Console.MarkupLineInterpolated($"Åpner innlogging i browser. Hvis ikke, klikk her: [link={loginUrl}]{loginUrl}[/]");
                 var callback = await http.GetContextAsync().WaitAsync(token);
                 ctx1.Status = "Callback mottatt!";
 
