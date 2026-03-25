@@ -2,10 +2,7 @@
 name: tim-deploy
 description: Full release process for the tim CLI tool. Use this skill whenever the user wants to release, deploy, publish, or cut a new version of tim. Triggers on phrases like "/tim-deploy", "release a new version", "deploy tim", "cut a release", "publish tim", or any request to bump the tim version.
 allowed-tools:
-  - Bash(${CLAUDE_SKILL_DIR}/scripts/check-release.sh:*)
-  - Bash(${CLAUDE_SKILL_DIR}/scripts/tag-and-push.sh:*)
-  - Bash(${CLAUDE_SKILL_DIR}/scripts/update-homebrew.sh:*)
-  - Bash(${CLAUDE_SKILL_DIR}/scripts/publish-release.sh:*)
+  - Bash(tim-*.sh*)
   - Bash(gh run list:*)
   - Bash(gh run view:*)
   - Bash(git -C * status:*)
@@ -20,10 +17,16 @@ This skill walks through the complete process of releasing a new version of tim,
 
 ## Step 1 — Determine the new version
 
-Run the check script to get the latest tag, commits since it, and whether `app/` was touched:
+First, sync with the remote to pick up any commits others may have pushed:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/check-release.sh
+${CLAUDE_SKILL_DIR}/scripts/tim-sync-remote.sh
+```
+
+Then run the check script to get the latest tag, commits since it, and whether `app/` was touched:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/tim-check-release.sh
 ```
 
 If there are **no new commits**, inform the user and abort — there is nothing to release.
@@ -49,7 +52,7 @@ git -C "$(git rev-parse --show-toplevel)" push
 ## Step 2 — Tag and push
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/tag-and-push.sh X.Y.Z
+${CLAUDE_SKILL_DIR}/scripts/tim-tag-and-push.sh X.Y.Z
 ```
 
 This triggers the "Publish Release" GitHub Actions workflow.
@@ -82,7 +85,7 @@ Notify the user that you're waiting and will proceed automatically once the run 
 Once the run succeeds:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/update-homebrew.sh X.Y.Z
+${CLAUDE_SKILL_DIR}/scripts/tim-update-homebrew.sh X.Y.Z
 ```
 
 The script downloads release assets, computes checksums, commits, and pushes automatically.
@@ -104,7 +107,7 @@ Write a concise, human-friendly release description based on the commit log. Foc
 Then publish:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/publish-release.sh X.Y.Z "<your release notes>"
+${CLAUDE_SKILL_DIR}/scripts/tim-publish-release.sh X.Y.Z "<your release notes>"
 ```
 
 ---
