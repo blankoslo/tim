@@ -1,49 +1,32 @@
 ---
 name: tim-deploy
 description: Full release process for the tim CLI tool. Use this skill whenever the user wants to release, deploy, publish, or cut a new version of tim. Triggers on phrases like "/tim-deploy", "release a new version", "deploy tim", "cut a release", "publish tim", or any request to bump the tim version.
+allowed-tools:
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/check-release.sh:*)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/tag-and-push.sh:*)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/update-homebrew.sh:*)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/publish-release.sh:*)
+  - Bash(gh run list:*)
+  - Bash(gh run view:*)
+  - Bash(git -C * status:*)
+  - Bash(git -C * push:*)
+  - Bash(git -C * log:*)
+  - Bash(brew update && brew upgrade tim:*)
 ---
 
 # tim-deploy — Full Release Process
 
 This skill walks through the complete process of releasing a new version of tim, from tagging to Homebrew and GitHub release notes.
 
-## Repo locations
-
-Derive locations dynamically — don't hardcode paths:
-
-```bash
-# tim repo: the git root of the current working directory
-TIM_REPO=$(git rev-parse --show-toplevel)
-
-# tim-brew repo: expected as a sibling named "tim-brew"
-TIM_BREW_REPO=$(dirname "$TIM_REPO")/tim-brew
-```
-
-If `tim-brew` is not found at that path, ask the user where it is before proceeding.
-
----
-
 ## Step 1 — Determine the new version
 
-Check the latest released tag and whether there are new commits since it:
+Run the check script to get the latest tag, commits since it, and whether `app/` was touched:
 
 ```bash
-gh release list --repo blankoslo/tim --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' | cat
-```
-
-Then check for commits since that tag:
-
-```bash
-git -C "$TIM_REPO" log <latest-tag>..HEAD --oneline
+${CLAUDE_SKILL_DIR}/scripts/check-release.sh
 ```
 
 If there are **no new commits**, inform the user and abort — there is nothing to release.
-
-Even if there are new commits, check whether any of them touch the `app/` directory — only changes there affect tim's behavior:
-
-```bash
-git -C "$TIM_REPO" diff <latest-tag>..HEAD --name-only | grep '^app/'
-```
 
 If no `app/` files changed, inform the user that there are no user-facing changes and abort.
 
@@ -52,23 +35,21 @@ If there are new commits, show the latest tag and the commit list to the user, t
 Also verify that all local commits are pushed to the remote before tagging:
 
 ```bash
-git -C "$TIM_REPO" status --short --branch
+git -C "$(git rev-parse --show-toplevel)" status --short --branch
 ```
 
 If there are unpushed commits, push them first:
 
 ```bash
-git -C "$TIM_REPO" push
+git -C "$(git rev-parse --show-toplevel)" push
 ```
 
 ---
 
 ## Step 2 — Tag and push
 
-From the tim repo:
-
 ```bash
-git -C "$TIM_REPO" tag X.Y.Z && git -C "$TIM_REPO" push origin X.Y.Z
+${CLAUDE_SKILL_DIR}/scripts/tag-and-push.sh X.Y.Z
 ```
 
 This triggers the "Publish Release" GitHub Actions workflow.
@@ -101,14 +82,10 @@ Notify the user that you're waiting and will proceed automatically once the run 
 Once the run succeeds:
 
 ```bash
-cd "$TIM_BREW_REPO"
-./updateformula.sh X.Y.Z
-git add Formula/tim.rb
-git commit -m "Update tim formula to X.Y.Z"
-git push
+${CLAUDE_SKILL_DIR}/scripts/update-homebrew.sh X.Y.Z
 ```
 
-The script downloads release assets and computes their checksums automatically — it requires the version as an argument.
+The script downloads release assets, computes checksums, commits, and pushes automatically.
 
 ---
 
@@ -119,7 +96,7 @@ The GitHub Actions workflow creates a **draft** release. You need to write notes
 First, get a summary of what changed:
 
 ```bash
-git -C "$TIM_REPO" log <prev-version>..<new-version> --oneline
+git -C "$(git rev-parse --show-toplevel)" log <prev-version>..<new-version> --oneline
 ```
 
 Write a concise, human-friendly release description based on the commit log. Focus on user-facing changes (features, bug fixes). Ignore chore/tooling/docs commits unless relevant to users.
@@ -127,10 +104,7 @@ Write a concise, human-friendly release description based on the commit log. Foc
 Then publish:
 
 ```bash
-gh release edit X.Y.Z --repo blankoslo/tim \
-  --draft=false \
-  --title "X.Y.Z" \
-  --notes "<your release notes>"
+${CLAUDE_SKILL_DIR}/scripts/publish-release.sh X.Y.Z "<your release notes>"
 ```
 
 ---
