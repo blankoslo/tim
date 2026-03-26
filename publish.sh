@@ -21,7 +21,7 @@ dotnet publish "$PROJECT_PATH" \
 echo "Executables available in $target_dir"
 
 case "$RID" in
-  win)
+  win*)
     exe="tim.exe"
     ;;
   *)

@@ -27,7 +27,7 @@ dotnet publish $ProjectPath `
 Write-Host "Executables available in $TargetDir"
 
 switch ($RID) {
-    "win" { $Exe = "tim.exe" }
+    { $_ -like "win*" } { $Exe = "tim.exe" }
     default { $Exe = "tim" }
 }
 
