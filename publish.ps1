@@ -2,7 +2,7 @@
 param(
     [string]$Version = "0.1.0",
     [string]$AccountKey = "abc",
-    [string]$OS = "win"
+    [string]$RID = "win"
 )
 
 $ProjectPath = "./app/Tim.csproj"
@@ -13,37 +13,37 @@ if (Test-Path $OutDir) {
 }
 New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 
-$TargetDir = Join-Path $OutDir $OS
+$TargetDir = Join-Path $OutDir $RID
 New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
 
-Write-Host "Publishing $ProjectPath for $OS ..."
+Write-Host "Publishing $ProjectPath for $RID ..."
 dotnet publish $ProjectPath `
     -c Release `
-    --os $OS `
+    -r $RID `
     -o $TargetDir `
     -f "net10.0" `
     -p:Version=$Version
 
 Write-Host "Executables available in $TargetDir"
 
-switch ($OS) {
+switch ($RID) {
     "win" { $Exe = "tim.exe" }
     default { $Exe = "tim" }
 }
 
-$TarFile = Join-Path $OutDir "tim-$OS.tar.gz"
+$TarFile = Join-Path $OutDir "tim-$RID.tar.gz"
 
 & tar -czf $TarFile -C $TargetDir $Exe
 
-Write-Host "Uploading tim-$OS.tar.gz to Azure..."
+Write-Host "Uploading tim-$RID.tar.gz to Azure..."
 
 az storage blob upload `
   --account-name homebrewfiles `
   --container-name tim `
-  --name "$Version/tim-$OS.tar.gz" `
+  --name "$Version/tim-$RID.tar.gz" `
   --file $TarFile `
   --account-key $AccountKey `
   --overwrite
 
-Write-Host "Uploading tim-$OS.tar.gz to github release"
-& gh release upload --clobber $Version "$TarFile#tim-$OS"
+Write-Host "Uploading tim-$RID.tar.gz to github release"
+& gh release upload --clobber $Version "$TarFile#tim-$RID"
