@@ -54,20 +54,3 @@ jobs:
           VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ github.token }}
 
-  publish-nuget:
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ github.ref_name }}
-    steps:
-      - name: Checkout source repo
-        uses: actions/checkout@v5
-
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Publish NuGet tool
-        run: ./publish-nuget.sh ${{env.VERSION}} ${{ secrets.NUGET_APIKEY }}
-        env:
-          VERSION: ${{ env.VERSION }}
-          GH_TOKEN: ${{ github.token }}
