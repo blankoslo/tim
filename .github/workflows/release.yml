@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            rid: linux
+            rid: linux-x64
           - os: windows-latest
             rid: win
           - os: macos-latest
