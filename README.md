@@ -57,19 +57,19 @@ tim write
 tim write 3,5
 
 # Vis ukesrapport for alle hos kunden 'Aneo Mobility'
-tim emp ls -c "Aneo Mobility" --ids | tim ls
+tim emp ls -c "Aneo Mobility" --ids | tim ls -
 
 # Vis ansattrapport for alle hos kunden 'Aneo Mobility' for forrige måned
-tim emp ls -c "Aneo Mobility" --ids | tim ls --range PreviousMonth
+tim emp ls -c "Aneo Mobility" --ids | tim ls --range PreviousMonth -
 
 # Vis prosjekter
 tim projects -c "Aneo Mobility"
 
 # Vis prosjekt-timeføring:
-tim projects -c "Aneo Mobility" --ids | tim projects time -r PreviousMonth
+tim projects -c "Aneo Mobility" --ids | tim projects time -r PreviousMonth -
 
 # Last ned CSV-rapport-filene fra Floq reports APIet som brukes som vedlegg til kundefaktura:
-tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r previousmonth
+tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r previousmonth -
 ```
 
 <div align="center">
@@ -94,7 +94,7 @@ $ tim curl -x post '/rpc/employees_on_projects' \
  --data '{ "from_date": "2025-11-01", "to_date":"2025-11-30"}' | grep "Ruter"
 
 # Finne timeføringa til alle Mags
-tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls
+tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls -
 
 ╭──────────────────────────────┬───────┬───────┬───────┬───────┬───────╮
 │                              │ 01.12 │ 02.12 │ 03.12 │ 04.12 │ 05.12 │

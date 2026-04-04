@@ -9,8 +9,7 @@ internal partial class Time
     /// <param name="date">-d, Dato som skal føres, dd.MM Default dagens dato.</param>
     /// <param name="yes">-y, Bare kjørr, ikke spør om bekreftelser.</param>
     [Command("write")]
-    [ConsoleAppFilter<AddStdinToContext>]
-    public async Task Write(
+    public async Task<int> Write(
         ConsoleAppContext ctx,
         [HideDefaultValue] string? project = null,
         [HideDefaultValue] SelectedRange range = SelectedRange.SingleDay,
@@ -19,12 +18,12 @@ internal partial class Time
         [HideDefaultValue] bool? yes = false,
         CancellationToken token = default)
     {
-        await WriteLogEntries(ctx, range, project, hours, date, yes, token);
+        return await WriteLogEntries(ctx, range, project, hours, date, yes, token);
     }
 
     private const int minutesPerDay = 450;
 
-    private async Task WriteLogEntries(ConsoleAppContext ctx,
+    private async Task<int> WriteLogEntries(ConsoleAppContext ctx,
         SelectedRange? mode = null,
         string? project = null,
         decimal? hours = null,
@@ -48,7 +47,7 @@ internal partial class Time
             {
                 Console.MarkupLine(
                     $"[red]errorz![/] Kunne ikke tolke datoen du oppga: '{userDefinedDateStr}'. Bruk format dd.MM, for eksempel 15.03 for 15. mars.");
-                return;
+                return 1;
             }
         }
 
@@ -57,7 +56,6 @@ internal partial class Time
             SelectedRange.SingleDay or null => SelectedRange.CurrentWeek,
             _ => mode.Value
         };
-        await ListPeriod(ctx, displayRange, specificDate, ct: token);
 
         var datesToWrite = GetDatesToWrite(mode, specificDate);
         var hoursToWrite = hours ?? 7.5m;
@@ -65,6 +63,7 @@ internal partial class Time
         string projectToWriteOn;
         if(project != null)
         {
+            // project arg provided
             var client = HttpClientFactory.CreateFloqClientForUser(session);
             var allProjects = await client.GetAllProjectsWithCustomer(token);
             var projectExists = allProjects.Any(p =>
@@ -87,22 +86,30 @@ internal partial class Time
                     }
                 }
 
-                return;
+                return 1;
             }
 
             projectToWriteOn = project.ToUpper();
         }
         else
         {
+            // project arg not provided
             var defaultProj = await UserSecretsManager.GetDefaultProject(token);
             if(defaultProj == null)
             {
-                Console.MarkupLine("[red]❌ Ingen prosjektkode angitt og ingen default prosjekt funnet.[/]");
+                if(skipConfirmations is true)
+                {
+                    Console.Console.MarkupLine("[red]❌ Ingen default prosjekt satt og du bruker -y for å unnvike interaktivitet. Avbryter![/]");
+                    return 1;
+                }
+
+                Console.MarkupLine("[yellow]⚠️ Ingen prosjektkode angitt && ingen default prosjekt satt.[/]");
                 Console.WriteLine();
                 Console.MarkupLine($"Hjelp:\n" +
                                    $"- Angi et prosjekt med [green]`tim write -p|--project [purple]<PROSJEKTKODE>[/]`[/]\n" +
                                    $"- Sett et default prosjekt med [green]`tim set-default [purple]<PROSJEKTKODE>[/]`[/] og rekjør [green]`tim write`[/].");
                 Console.WriteLine();
+
                 var chooseProject = Console.Prompt(
                     new ConfirmationPrompt(
                         $"\nVil du sette et default-prosjekt og timeføre {hoursToWrite} på dette nå?"));
@@ -116,13 +123,13 @@ internal partial class Time
                     }
                     else
                     {
-                        Console.WriteLine($"[red]❌ Ingen default prosjekt satt. Avbryter.[/]");
-                        return;
+                        Console.MarkupLine("[red]❌ Ingen default prosjekt satt. Avbryter.[/]");
+                        return 1;
                     }
                 }
                 else
                 {
-                    return;
+                    return 1;
                 }
             }
             else
@@ -147,6 +154,7 @@ internal partial class Time
             Console.WriteLine(
                 $"Førte {hoursToWrite} på {projectToWriteOn} [{datesToWrite[0]:dd.MM}-{datesToWrite[^1]:dd.MM}] ");
         }
+        return 0;
     }
 
     private static async Task WriteEntriesForDates(string targetProjectCode, DateOnly[] datesToWrite,
