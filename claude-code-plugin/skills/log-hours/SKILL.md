@@ -16,7 +16,7 @@ When the user wants to log hours:
 3. Custom duration mentioned → append it: `tim write 3,5` or `tim write -p ANE1006 3,5`
 4. Past date → check `tim write --help` for the date flag syntax
 5. "Previous week" = Monday–Friday only, never weekends (Sat/Sun are never work days)
-6. When logging multiple days, run each `tim write` command separately (not chained with &&) to avoid timeouts
+6. When logging multiple days, chaining with `&&` is fine: `tim write -y -d 01.04 && tim write -y -d 02.04`
 
 After every write operation (logging hours, updating entries), always run `tim ls` and display the result as a table so the user can see the full week overview:
 ```bash
@@ -54,20 +54,18 @@ tim set-default <projectId>
 
 ```bash
 # Week overview for a client
-tim emp ls -c "Client Name" --ids | tim ls
+tim emp ls -c "Client Name" --ids | tim ls -
 
 # Project hours for a client
-tim projects -c "Client Name" --ids | tim projects time -r PreviousMonth
+tim projects -c "Client Name" --ids | tim projects time -r PreviousMonth -
 
 # Download CSV for invoicing
-tim projects -c "Client Name" --ids | tim reports project-employee-hours -r previousmonth
+tim projects -c "Client Name" --ids | tim reports project-employee-hours -r previousmonth -
 ```
 
 ## Raw API access (read-only exploration only)
 
-`tim curl` er et spørre-/utforskingsverktøy. Bruk det aldri til å føre timer, oppdatere oppføringer eller gjøre noen form for skriveoperasjoner — selv om du ikke finner et passende native command.
-
-`tim curl` is strictly for reading and exploring data. Never use it to create, update, or delete entries.
+`tim curl` is strictly for reading and exploring data. Never use it to create, update, or delete entries. Always try native `tim` commands first — only reach for `tim curl` when no native command can get the information you need.
 
 ```bash
 # Fetch the OpenAPI spec — use this to discover available tables, columns, and RPC functions

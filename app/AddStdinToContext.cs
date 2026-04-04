@@ -2,27 +2,16 @@ internal class AddStdinToContext(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
     public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
     {
-        if(System.Console.IsInputRedirected)
+        if(StdinBuffer.Lines is { } stdinLines)
         {
-            string[] stdinArray = [];
-            while(System.Console.ReadLine() is { } line)
-            {
-                stdinArray = stdinArray.Append(line).ToArray();
-            }
-
-            if(context.State is GlobalState existingState)
-            {
-                var newState = existingState with { StdIn = stdinArray };
-                await Next.InvokeAsync(context with { State = newState }, cancellationToken);
-            }
-            else
-            {
-                await Next.InvokeAsync(context with { State = new GlobalState(StdIn: stdinArray) }, cancellationToken);
-            }
+            var newState = context.State is GlobalState existing
+                ? existing with { StdIn = stdinLines }
+                : new GlobalState(StdIn: stdinLines);
+            await Next.InvokeAsync(context with { State = newState }, cancellationToken);
         }
         else
         {
-            await Next.InvokeAsync(context, CancellationToken.None);
+            await Next.InvokeAsync(context, cancellationToken);
         }
     }
 }

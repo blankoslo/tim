@@ -9,6 +9,7 @@ internal partial class Time
     /// <param name="customer">-c, Filtrer på kunde. Kundekode i Floq. Eks "ANE" for Aneo Mobility.</param>
     [Command("list|ls")]
     [ConsoleAppFilter<AuthenticationFilter>]
+    [ConsoleAppFilter<AddStdinToContext>]
     public async Task List(ConsoleAppContext ctx,
         SelectedRange range = SelectedRange.CurrentWeek,
         [Argument] int? emp = null,
@@ -50,16 +51,13 @@ internal partial class Time
         var session = consoleCtx.UserSession;
         var employeeIds = new List<int>();
 
-        if(System.Console.IsInputRedirected)
+        consoleCtx.StandardInput(line =>
         {
-            consoleCtx.StandardInput(line =>
+            if(line.IsInteger(out var empIdFromStdIn))
             {
-                if(line.IsInteger(out var empIdFromStdIn))
-                {
-                    employeeIds.Add(empIdFromStdIn);
-                }
-            });
-        }
+                employeeIds.Add(empIdFromStdIn);
+            }
+        });
 
         if(!employeeIds.Any())
         {
