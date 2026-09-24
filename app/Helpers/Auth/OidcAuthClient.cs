@@ -12,7 +12,7 @@ public static class OidcAuthClient
 {
     private const string Issuer = "https://inni.blank.no";
     private const string ClientId = "cf3589d756aebd342dce402c648e5296";
-    private const string Scope = "openid email profile offline_access role:employee";
+    private const string Scope = "openid email offline_access role:employee";
 
     private static readonly HttpClient Client = new()
     {
