@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 internal partial class Authentications
 {
@@ -28,41 +26,35 @@ internal partial class Authentications
             {
                 var port = FindFirstAvailablePort();
                 var redirectUrl = $"http://localhost:{port}/";
-                using var http = new HttpListener();
-                http.Prefixes.Add(redirectUrl);
-                http.Start();
-                ctx1.Status = "Web-server started for å motta callback";
-                var loginUrl = $"https://inni.blank.no/login/oauth?to={redirectUrl}";
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = loginUrl,
-                    UseShellExecute = true
-                });
-                ctx1.Status = "Venter på at du skal fulløre innlogging i browser...";
-                Console.MarkupLineInterpolated($"Åpner innlogging i browser. Hvis ikke, klikk her: [link={loginUrl}]{loginUrl}[/]");
-                var callback = await http.GetContextAsync().WaitAsync(token);
-                ctx1.Status = "Callback mottatt!";
+                ctx1.Status = "Venter på at du skal fullføre innlogging i browser...";
 
-                var data = await HandleImplicitFlowCallback(callback, token);
-                if(data == null)
+                var loginResult = await OidcAuthClient.LoginAsync(redirectUrl, new LoopbackBrowser(redirectUrl), token);
+                if(loginResult.IsError)
                 {
                     ctx1.Status = ":/";
-                    Console.MarkupLine($"[red]Innlogging feilet[/].\nPrøv igjen.");
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]{loginResult.Error}: {loginResult.ErrorDescription}[/]");
                     return;
                 }
 
                 ctx1.Status = "Sjekker ansatt-basen.";
-                var client = HttpClientFactory.CreateFloqClientForUser(data.AccessToken);
-                var emp = await client.GetEmployeeByEmail(data.UserEmail, token);
+                var email = loginResult.User.FindFirst("email")?.Value;
+                if(email == null)
+                {
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Fant ingen e-post i innloggingen.[/]");
+                    return;
+                }
+
+                var client = HttpClientFactory.CreateFloqClientForUser(loginResult.AccessToken);
+                var emp = await client.GetEmployeeByEmail(email, token);
                 if(emp == null)
                 {
                     Console.MarkupLine($"[red]Innlogging feilet[/].\n" +
-                                       $"[yellow]Ingen ansatt med e-post: [bold white]{data.UserEmail}[/][/].");
+                                       $"[yellow]Ingen ansatt med e-post: [bold white]{email}[/][/].");
                     return;
                 }
 
                 ctx1.Status = "Ansatt-match funnet";
-                await UserSecretsManager.WriteImplicitData(data, emp, token);
+                await UserSecretsManager.WriteTokenData(loginResult, email, emp, token);
                 ctx1.Status = "Innlogging fullført";
                 Console.MarkupLine($"Innlogget som [green]{emp.First_Name} [dim]({emp.Email})[/][/]");
             });
@@ -83,35 +75,5 @@ internal partial class Authentications
         }
 
         return port;
-    }
-
-    private static async Task<ImplicitCallbackData?> HandleImplicitFlowCallback(HttpListenerContext context,
-        CancellationToken token)
-    {
-        var query = context.Request.QueryString;
-
-        var html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.SuccessInnerHtml);
-
-        if(query["error"] != null)
-        {
-            html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.ErrorInnerHtml);
-        }
-
-        var buffer = Encoding.UTF8.GetBytes(html);
-        await context.Response.OutputStream.WriteAsync(buffer, token);
-        context.Response.OutputStream.Close();
-
-        var accessToken = query["access_token"];
-        var expiryDate = query["expiry_date"];
-        var refreshToken = query["refresh_token"];
-        var userEmail = query["user_email"];
-        ImplicitCallbackData? data = null;
-
-        if(accessToken is not null && expiryDate is not null && refreshToken is not null && userEmail is not null)
-        {
-            data = new ImplicitCallbackData(accessToken, expiryDate, refreshToken, userEmail);
-        }
-
-        return data;
     }
 }

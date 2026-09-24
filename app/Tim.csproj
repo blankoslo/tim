@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="ConsoleAppFramework" Version="5.7.13" />
+    <PackageReference Include="Duende.IdentityModel.OidcClient" Version="7.1.0" />
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
 
   </ItemGroup>
