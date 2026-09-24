@@ -33,6 +33,9 @@ public static class OidcAuthClient
         ClientId = ClientId,
         Scope = Scope,
         RedirectUri = redirectUri,
-        Browser = browser!
+        Browser = browser!,
+        // Floq's id_token carries the email claim, so we read it off LoginResult.User
+        // instead of making an extra round-trip to the userinfo endpoint.
+        LoadProfile = false
     };
 }
