@@ -32,7 +32,11 @@ internal partial class Authentications
                 http.Prefixes.Add(redirectUrl);
                 http.Start();
                 ctx1.Status = "Web-server started for å motta callback";
-                var loginUrl = $"https://inni.blank.no/login/oauth?to={redirectUrl}";
+
+                var (codeVerifier, codeChallenge) = OidcAuthClient.GeneratePkce();
+                var state = OidcAuthClient.GenerateState();
+                var loginUrl = OidcAuthClient.BuildAuthorizationUrl(redirectUrl, state, codeChallenge);
+
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = loginUrl,
@@ -43,26 +47,42 @@ internal partial class Authentications
                 var callback = await http.GetContextAsync().WaitAsync(token);
                 ctx1.Status = "Callback mottatt!";
 
-                var data = await HandleImplicitFlowCallback(callback, token);
-                if(data == null)
+                var code = await HandleAuthorizationCallback(callback, state, token);
+                if(code == null)
                 {
                     ctx1.Status = ":/";
                     Console.MarkupLine($"[red]Innlogging feilet[/].\nPrøv igjen.");
                     return;
                 }
 
+                ctx1.Status = "Bytter kode mot token…";
+                var tokenResponse = await OidcAuthClient.ExchangeCodeAsync(code, codeVerifier, redirectUrl, token);
+                if(tokenResponse == null)
+                {
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Klarte ikke å hente token.[/]");
+                    return;
+                }
+
+                ctx1.Status = "Henter brukerinfo";
+                var userInfo = await OidcAuthClient.GetUserInfoAsync(tokenResponse.AccessToken, token);
+                if(userInfo == null)
+                {
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Klarte ikke å hente brukerinfo.[/]");
+                    return;
+                }
+
                 ctx1.Status = "Sjekker ansatt-basen.";
-                var client = HttpClientFactory.CreateFloqClientForUser(data.AccessToken);
-                var emp = await client.GetEmployeeByEmail(data.UserEmail, token);
+                var client = HttpClientFactory.CreateFloqClientForUser(tokenResponse.AccessToken);
+                var emp = await client.GetEmployeeByEmail(userInfo.Email, token);
                 if(emp == null)
                 {
                     Console.MarkupLine($"[red]Innlogging feilet[/].\n" +
-                                       $"[yellow]Ingen ansatt med e-post: [bold white]{data.UserEmail}[/][/].");
+                                       $"[yellow]Ingen ansatt med e-post: [bold white]{userInfo.Email}[/][/].");
                     return;
                 }
 
                 ctx1.Status = "Ansatt-match funnet";
-                await UserSecretsManager.WriteImplicitData(data, emp, token);
+                await UserSecretsManager.WriteTokenData(tokenResponse, userInfo.Email, emp, token);
                 ctx1.Status = "Innlogging fullført";
                 Console.MarkupLine($"Innlogget som [green]{emp.First_Name} [dim]({emp.Email})[/][/]");
             });
@@ -85,33 +105,17 @@ internal partial class Authentications
         return port;
     }
 
-    private static async Task<ImplicitCallbackData?> HandleImplicitFlowCallback(HttpListenerContext context,
+    private static async Task<string?> HandleAuthorizationCallback(HttpListenerContext context, string expectedState,
         CancellationToken token)
     {
         var query = context.Request.QueryString;
+        var failed = query["error"] != null || query["state"] != expectedState || query["code"] == null;
 
-        var html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.SuccessInnerHtml);
-
-        if(query["error"] != null)
-        {
-            html = Html.LayoutHtml.Replace("{{InnerHtml}}", Html.ErrorInnerHtml);
-        }
-
+        var html = Html.LayoutHtml.Replace("{{InnerHtml}}", failed ? Html.ErrorInnerHtml : Html.SuccessInnerHtml);
         var buffer = Encoding.UTF8.GetBytes(html);
         await context.Response.OutputStream.WriteAsync(buffer, token);
         context.Response.OutputStream.Close();
 
-        var accessToken = query["access_token"];
-        var expiryDate = query["expiry_date"];
-        var refreshToken = query["refresh_token"];
-        var userEmail = query["user_email"];
-        ImplicitCallbackData? data = null;
-
-        if(accessToken is not null && expiryDate is not null && refreshToken is not null && userEmail is not null)
-        {
-            data = new ImplicitCallbackData(accessToken, expiryDate, refreshToken, userEmail);
-        }
-
-        return data;
+        return failed ? null : query["code"];
     }
 }

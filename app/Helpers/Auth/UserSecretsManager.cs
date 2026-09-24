@@ -7,23 +7,20 @@ using System.Text.Json.Serialization;
 
 public class UserSecretsManager
 {
-    private static readonly HttpClient AuthClient = new()
-    {
-        BaseAddress = new Uri("https://inni.blank.no"),
-        Timeout = TimeSpan.FromSeconds(10)
-    };
-
-    public static async Task WriteImplicitData(ImplicitCallbackData data, Employee? employee, CancellationToken token)
+    public static async Task WriteTokenData(TokenResponse tokenResponse, string email, Employee? employee, CancellationToken token)
     {
         var secretsPath = GetAppDataPath();
         Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
 
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
 
-        secrets["Floq:AccessToken"] = data.AccessToken;
-        secrets["Floq:RefreshToken"] = data.RefreshToken;
-        secrets["Floq:ExpiresAt"] = data.ExpireDate;
-        secrets["Floq:Email"] = data.UserEmail;
+        secrets["Floq:AccessToken"] = tokenResponse.AccessToken;
+        if(tokenResponse.RefreshToken != null)
+        {
+            secrets["Floq:RefreshToken"] = tokenResponse.RefreshToken;
+        }
+        secrets["Floq:ExpiresAt"] = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn).ToString("o");
+        secrets["Floq:Email"] = email;
 
         if(employee != null)
         {
@@ -197,18 +194,10 @@ public class UserSecretsManager
             return null;
         }
 
-        var response = await AuthClient.PostAsJsonAsync("/login/oauth/refresh",
-            new RefreshTokenRequest(currentSession.RefreshToken), UserSecretsJsonSerializerContext.Default.RefreshTokenRequest, token);
-
-        if(!response.IsSuccessStatusCode)
+        var tokenResponse = await OidcAuthClient.RefreshAsync(currentSession.RefreshToken, token);
+        if(tokenResponse == null)
         {
             Console.WriteLine("Unable to refresh session");
-            return null;
-        }
-
-        var refreshResponse = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>(UserSecretsJsonSerializerContext.Default.RefreshTokenResponse,token);
-        if(refreshResponse == null)
-        {
             return null;
         }
 
@@ -217,8 +206,12 @@ public class UserSecretsManager
 
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
 
-        secrets["Floq:AccessToken"] = refreshResponse.AccessToken;
-        secrets["Floq:ExpiresAt"] = refreshResponse.ExpiryDate;
+        secrets["Floq:AccessToken"] = tokenResponse.AccessToken;
+        if(tokenResponse.RefreshToken != null)
+        {
+            secrets["Floq:RefreshToken"] = tokenResponse.RefreshToken;
+        }
+        secrets["Floq:ExpiresAt"] = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn).ToString("o");
 
         var secretsJson = ToJson(secrets);
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
@@ -277,28 +270,14 @@ public record UserSession(
     }
 }
 
-public record RefreshTokenRequest(
-    [property: JsonPropertyName("refresh_token")]
-    string RefreshToken);
-
-public record RefreshTokenResponse(
-    [property: JsonPropertyName("access_token")]
-    string AccessToken,
-    [property: JsonPropertyName("expiry_date")]
-    string ExpiryDate);
-
 // Stored as JSON in file, nb, be backwards compatitble
 public record UserDefaultedProject(string Id, string Project, string Customer, string CustomerId);
-
-public record ImplicitCallbackData(string AccessToken, string ExpireDate, string RefreshToken, string UserEmail);
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase
 )]
 [JsonSerializable(typeof(UserDefaultedProject))]
-[JsonSerializable(typeof(RefreshTokenRequest))]
-[JsonSerializable(typeof(RefreshTokenResponse))]
 internal partial class UserSecretsJsonSerializerContext : JsonSerializerContext
 {
 }
