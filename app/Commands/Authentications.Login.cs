@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 internal partial class Authentications
 {
@@ -28,61 +26,35 @@ internal partial class Authentications
             {
                 var port = FindFirstAvailablePort();
                 var redirectUrl = $"http://localhost:{port}/";
-                using var http = new HttpListener();
-                http.Prefixes.Add(redirectUrl);
-                http.Start();
-                ctx1.Status = "Web-server started for å motta callback";
+                ctx1.Status = "Venter på at du skal fullføre innlogging i browser...";
 
-                var (codeVerifier, codeChallenge) = OidcAuthClient.GeneratePkce();
-                var state = OidcAuthClient.GenerateState();
-                var loginUrl = OidcAuthClient.BuildAuthorizationUrl(redirectUrl, state, codeChallenge);
-
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = loginUrl,
-                    UseShellExecute = true
-                });
-                ctx1.Status = "Venter på at du skal fulløre innlogging i browser...";
-                Console.MarkupLineInterpolated($"Åpner innlogging i browser. Hvis ikke, klikk her: [link={loginUrl}]{loginUrl}[/]");
-                var callback = await http.GetContextAsync().WaitAsync(token);
-                ctx1.Status = "Callback mottatt!";
-
-                var code = await HandleAuthorizationCallback(callback, state, token);
-                if(code == null)
+                var loginResult = await OidcAuthClient.LoginAsync(redirectUrl, new LoopbackBrowser(redirectUrl), token);
+                if(loginResult.IsError)
                 {
                     ctx1.Status = ":/";
-                    Console.MarkupLine($"[red]Innlogging feilet[/].\nPrøv igjen.");
-                    return;
-                }
-
-                ctx1.Status = "Bytter kode mot token…";
-                var tokenResponse = await OidcAuthClient.ExchangeCodeAsync(code, codeVerifier, redirectUrl, token);
-                if(tokenResponse == null)
-                {
-                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Klarte ikke å hente token.[/]");
-                    return;
-                }
-
-                ctx1.Status = "Henter brukerinfo";
-                var userInfo = await OidcAuthClient.GetUserInfoAsync(tokenResponse.AccessToken, token);
-                if(userInfo == null)
-                {
-                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Klarte ikke å hente brukerinfo.[/]");
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]{loginResult.Error}: {loginResult.ErrorDescription}[/]");
                     return;
                 }
 
                 ctx1.Status = "Sjekker ansatt-basen.";
-                var client = HttpClientFactory.CreateFloqClientForUser(tokenResponse.AccessToken);
-                var emp = await client.GetEmployeeByEmail(userInfo.Email, token);
+                var email = loginResult.User.FindFirst("email")?.Value;
+                if(email == null)
+                {
+                    Console.MarkupLine($"[red]Innlogging feilet[/].\n[yellow]Fant ingen e-post i innloggingen.[/]");
+                    return;
+                }
+
+                var client = HttpClientFactory.CreateFloqClientForUser(loginResult.AccessToken);
+                var emp = await client.GetEmployeeByEmail(email, token);
                 if(emp == null)
                 {
                     Console.MarkupLine($"[red]Innlogging feilet[/].\n" +
-                                       $"[yellow]Ingen ansatt med e-post: [bold white]{userInfo.Email}[/][/].");
+                                       $"[yellow]Ingen ansatt med e-post: [bold white]{email}[/][/].");
                     return;
                 }
 
                 ctx1.Status = "Ansatt-match funnet";
-                await UserSecretsManager.WriteTokenData(tokenResponse, userInfo.Email, emp, token);
+                await UserSecretsManager.WriteTokenData(loginResult, email, emp, token);
                 ctx1.Status = "Innlogging fullført";
                 Console.MarkupLine($"Innlogget som [green]{emp.First_Name} [dim]({emp.Email})[/][/]");
             });
@@ -103,19 +75,5 @@ internal partial class Authentications
         }
 
         return port;
-    }
-
-    private static async Task<string?> HandleAuthorizationCallback(HttpListenerContext context, string expectedState,
-        CancellationToken token)
-    {
-        var query = context.Request.QueryString;
-        var failed = query["error"] != null || query["state"] != expectedState || query["code"] == null;
-
-        var html = Html.LayoutHtml.Replace("{{InnerHtml}}", failed ? Html.ErrorInnerHtml : Html.SuccessInnerHtml);
-        var buffer = Encoding.UTF8.GetBytes(html);
-        await context.Response.OutputStream.WriteAsync(buffer, token);
-        context.Response.OutputStream.Close();
-
-        return failed ? null : query["code"];
     }
 }

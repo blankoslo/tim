@@ -3,23 +3,24 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Duende.IdentityModel.OidcClient;
 
 
 public class UserSecretsManager
 {
-    public static async Task WriteTokenData(TokenResponse tokenResponse, string email, Employee? employee, CancellationToken token)
+    public static async Task WriteTokenData(LoginResult loginResult, string email, Employee? employee, CancellationToken token)
     {
         var secretsPath = GetAppDataPath();
         Directory.CreateDirectory(Path.GetDirectoryName(secretsPath)!);
 
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
 
-        secrets["Floq:AccessToken"] = tokenResponse.AccessToken;
-        if(tokenResponse.RefreshToken != null)
+        secrets["Floq:AccessToken"] = loginResult.AccessToken;
+        if(loginResult.RefreshToken != null)
         {
-            secrets["Floq:RefreshToken"] = tokenResponse.RefreshToken;
+            secrets["Floq:RefreshToken"] = loginResult.RefreshToken;
         }
-        secrets["Floq:ExpiresAt"] = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn).ToString("o");
+        secrets["Floq:ExpiresAt"] = loginResult.AccessTokenExpiration.UtcDateTime.ToString("o");
         secrets["Floq:Email"] = email;
 
         if(employee != null)
@@ -194,8 +195,8 @@ public class UserSecretsManager
             return null;
         }
 
-        var tokenResponse = await OidcAuthClient.RefreshAsync(currentSession.RefreshToken, token);
-        if(tokenResponse == null)
+        var refreshResult = await OidcAuthClient.RefreshAsync(currentSession.RefreshToken, token);
+        if(refreshResult.IsError)
         {
             Console.WriteLine("Unable to refresh session");
             return null;
@@ -206,12 +207,12 @@ public class UserSecretsManager
 
         var secrets = await ReadAsDictionary(token) ?? new Dictionary<string, string>();
 
-        secrets["Floq:AccessToken"] = tokenResponse.AccessToken;
-        if(tokenResponse.RefreshToken != null)
+        secrets["Floq:AccessToken"] = refreshResult.AccessToken;
+        if(refreshResult.RefreshToken != null)
         {
-            secrets["Floq:RefreshToken"] = tokenResponse.RefreshToken;
+            secrets["Floq:RefreshToken"] = refreshResult.RefreshToken;
         }
-        secrets["Floq:ExpiresAt"] = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn).ToString("o");
+        secrets["Floq:ExpiresAt"] = refreshResult.AccessTokenExpiration.UtcDateTime.ToString("o");
 
         var secretsJson = ToJson(secrets);
         await File.WriteAllTextAsync(secretsPath, secretsJson, token);
