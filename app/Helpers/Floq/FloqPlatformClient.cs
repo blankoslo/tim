@@ -32,6 +32,11 @@ public class FloqPlatformClient(HttpClient client)
             FloqPlatformJsonSerializerContext.Default.TimesheetPage, token);
         return res ?? new TimesheetPage([]);
     }
+
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage msg, CancellationToken token)
+    {
+        return client.SendAsync(msg, token);
+    }
 }
 
 // CustomerId/CustomerName are null for AVS, which is no project.

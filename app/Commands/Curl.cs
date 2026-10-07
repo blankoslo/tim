@@ -8,6 +8,7 @@ internal class CurlCommand
     /// <param name="data">-d, json body: f.eks. `{}`</param>
     /// <param name="x">-X, method: f.eks. `GET|POST|PUT`</param>
     /// <param name="h">-H, Headere f.eks. 'Accept: application/json'</param>
+    /// <param name="platform">-p, Gå mot floq-platform (api.platform.floq.no) i stedet for PostgREST</param>
     [ConsoleAppFilter<AuthenticationFilter>]
     [Command("curl")]
     public async Task<int> Curl(
@@ -16,6 +17,7 @@ internal class CurlCommand
         string x = "GET",
         string? data = null,
         string[]? h = null,
+        bool platform = false,
         CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
@@ -46,8 +48,9 @@ internal class CurlCommand
             }
         }
 
-        var client = HttpClientFactory.CreateFloqClientForUser(session);
-        var response = await client.SendAsync(msg, token);
+        var response = platform
+            ? await HttpClientFactory.CreatePlatformClientForUser(session).SendAsync(msg, token)
+            : await HttpClientFactory.CreateFloqClientForUser(session).SendAsync(msg, token);
         if(response.IsSuccessStatusCode)
         {
             var responseBody = await response.Content.ReadAsStringAsync(token);
