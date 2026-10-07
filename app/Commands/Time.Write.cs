@@ -162,15 +162,17 @@ internal partial class Time
         CancellationToken cancellationToken = default)
     {
         var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var platform = HttpClientFactory.CreatePlatformClientForUser(session);
 
         foreach(var day in datesToWrite)
         {
-            await WriteEntryForDay(client, session, datesToWrite.Length, day, targetProjectCode, yes, hours,
+            await WriteEntryForDay(client, platform, session, datesToWrite.Length, day, targetProjectCode, yes, hours,
                 cancellationToken);
         }
     }
 
-    private static async Task WriteEntryForDay(FloqClient client, UserSession session, int totalDaysToWrite,
+    private static async Task WriteEntryForDay(FloqClient client, FloqPlatformClient platform, UserSession session,
+        int totalDaysToWrite,
         DateOnly day,
         string targetProjectCode, bool skipConfirm, decimal? hours = null,
         CancellationToken cancellationToken = default)
@@ -184,9 +186,8 @@ internal partial class Time
 
         var hoursFriendlyStr = minutesToLog > 0 ? $"{minutesToLog / 60m:F1}" : "0";
 
-        var loggedHoursForDay =
-            await client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, day, cancellationToken);
-        var loggedHoursForDayAndProject = loggedHoursForDay.SingleOrDefault(h => h.Id == targetProjectCode);
+        var loggedHoursForDay = await platform.GetHours(session.EmployeeId, day, day, cancellationToken);
+        var loggedHoursForDayAndProject = loggedHoursForDay.Entries.SingleOrDefault(h => h.Code == targetProjectCode);
 
         var hoursDiff = (loggedHoursForDayAndProject?.Minutes - (hours * 60)) / 60m;
 
