@@ -27,9 +27,9 @@ public static class Formatting
         return $"[white][[{customer.Id}]][/] {customer.Name}";
     }
 
-    public static string Format(RpcProjectsForEmployeeeForDateResponse proj)
+    public static string Format(EmployeeDay proj)
     {
-        return $"[purple]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Code}[/] {proj.Name} ";
     }
 
     public static string Format(Project proj)

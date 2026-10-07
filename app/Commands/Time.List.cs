@@ -72,6 +72,7 @@ internal partial class Time
         }
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var platform = HttpClientFactory.CreatePlatformClientForUser(session);
         foreach(var empId in employeeIds)
         {
             if(employeeIds.Count > 1)
@@ -79,7 +80,7 @@ internal partial class Time
                 Console.WriteLine();
             }
 
-            await ProcessEmployee(dates, empId, customer, ct, session, client, employeeIds.Count > 1, range);
+            await ProcessEmployee(dates, empId, customer, ct, session, client, platform, employeeIds.Count > 1, range);
 
             if(employeeIds.Count > 1)
             {
@@ -90,12 +91,12 @@ internal partial class Time
 
     private static async Task ProcessEmployee(DateOnly[] dates, int? employeeId, string? customer,
         CancellationToken ct,
-        UserSession session, FloqClient client, bool multipleEmployeeOutput,
+        UserSession session, FloqClient client, FloqPlatformClient platform, bool multipleEmployeeOutput,
         SelectedRange range = SelectedRange.CurrentWeek)
     {
         var empId = employeeId ?? session.EmployeeId;
 
-        var report = await CreateReport(range, dates, client, empId, customer, ct);
+        var report = await CreateReport(range, dates, client, platform, empId, customer, ct);
         if(report != null && report.HasTimeEntries())
         {
             Table table = new();
@@ -141,6 +142,7 @@ internal partial class Time
 
     private static async Task<WeeklyTimeforingReport?> CreateReport(SelectedRange range, DateOnly[] dates,
         FloqClient client,
+        FloqPlatformClient platform,
         int employeeId,
         string? customer,
         CancellationToken ct)
@@ -151,35 +153,21 @@ internal partial class Time
             return null;
         }
 
-        Dictionary<DateOnly, Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>> allTasks = new();
-        foreach(var singleDay in dates)
-        {
-            var t = client.GetRpcProjectsForEmployeeForDate(employeeId, singleDay, ct);
-            allTasks.Add(singleDay, t);
-        }
+        var days = await platform.GetEmployeeDays([employeeId], dates.Min(), dates.Max(), ct);
 
-        await Task.WhenAll(allTasks.Values);
-
-        Dictionary<DateOnly, IEnumerable<RpcProjectsForEmployeeeForDateResponse>> entriesByDay = new();
-        foreach(var kvp in allTasks)
-        {
-            var entries = await kvp.Value;
-            if(customer is not null)
-            {
-                entriesByDay[kvp.Key] =
-                    entries.Where(e => e.Customer.Equals(customer, StringComparison.CurrentCultureIgnoreCase));
-            }
-            else
-            {
-                entriesByDay[kvp.Key] = entries;
-            }
-        }
+        // The doc promises a customer code ("ANE"); the RPC only knew the name, so accept both.
+        var entriesByDay = dates.ToDictionary(day => day, day => days
+            .Where(e => e.Date == day)
+            .Where(e => customer is null
+                        || string.Equals(e.CustomerId, customer, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(e.CustomerName, customer, StringComparison.CurrentCultureIgnoreCase))
+            .ToList());
 
         var projects = entriesByDay.SelectMany(kvp => kvp.Value)
-            .GroupBy(p => p.Id)
+            .GroupBy(p => p.Code)
             .Select(g => g.First())
-            .OrderBy(p => p.Id)
-            .ToList().Select(p => new Project(p.Id, p.Project)).ToList();
+            .OrderBy(p => p.Code)
+            .ToList().Select(p => new Project(p.Code, p.Name ?? "")).ToList();
 
 
         Dictionary<ProjectDay, Timeforing> timerPrProsjekt = new();
@@ -188,11 +176,12 @@ internal partial class Time
         {
             foreach(var day in dates)
             {
-                var projectEntriesOnDay = entriesByDay[day].FirstOrDefault(e => e.Id == project.Id);
+                var projectEntriesOnDay = entriesByDay[day].FirstOrDefault(e => e.Code == project.Id);
 
                 timerPrProsjekt.Add(new ProjectDay(project.Id, day),
                     projectEntriesOnDay is not null
-                        ? new Timeforing(day, projectEntriesOnDay.Minutes, projectEntriesOnDay.Percentage_Staffed)
+                        ? new Timeforing(day, projectEntriesOnDay.Minutes,
+                            projectEntriesOnDay.StaffedPercentage + projectEntriesOnDay.AbsencePercentage)
                         : new Timeforing(day, 0, 0));
             }
         }
