@@ -9,10 +9,10 @@ public class HttpClientFactory
         return new HttpClient(handler) { BaseAddress = new Uri("https://api-prod.floq.no") };
     }
 
-    private static HttpClient ReportsClient()
+    private static HttpClient PlatformClient()
     {
         var handler = new SocketsHttpHandler { MaxConnectionsPerServer = 6 };
-        return new HttpClient(handler) { BaseAddress = new Uri("https://reports-api-prod.floq.no") };
+        return new HttpClient(handler) { BaseAddress = new Uri("https://api.platform.floq.no") };
     }
 
     public static FloqClient CreateFloqClientForUser(UserSession session)
@@ -20,10 +20,10 @@ public class HttpClientFactory
         return CreateFloqClientForUser(session.AccessToken, session.EmployeeId);
     }
 
-    public static FloqReportsApiClient CreateReportsClientForUser(UserSession session)
+    public static FloqPlatformClient CreatePlatformClientForUser(UserSession session)
     {
-        return SetupHttpClient<FloqReportsApiClient>(ReportsClient(), session.AccessToken,
-                session.EmployeeId, c => new FloqReportsApiClient(c));
+        return SetupHttpClient<FloqPlatformClient>(PlatformClient(), session.AccessToken,
+                session.EmployeeId, c => new FloqPlatformClient(c));
     }
 
     public static FloqClient CreateFloqClientForUser(string accessToken, int? employeeId = null)

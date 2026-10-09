@@ -55,7 +55,7 @@ The homebrew deploys are dependent on github release assets (tar/zips in the rel
 
 - `app/Program.cs` — entry point; sets Norwegian locale and starts ConsoleAppFramework
 - `app/Commands/` — one class per command group, subcommands as separate files (e.g. `Time.cs`, `Time.List.cs`, `Time.Write.cs`)
-- `app/Helpers/Floq/` — HTTP clients for Floq/PostgREST API (`FloqClient.cs`, `FloqReportsApiClient.cs`)
+- `app/Helpers/Floq/` — HTTP clients for Floq/PostgREST API (`FloqClient.cs` for the PostgREST API, `FloqPlatformClient.cs` for floq-platform)
 - `app/Helpers/Auth/` — JWT session management via .NET user secrets (`UserSecretsId: tim-1337`)
 - `app/GlobalUsings.cs` — shared usings across the project
 

@@ -11,7 +11,7 @@ internal class Reports
         [Argument] string? projectId = null, string? outputPath = null, CancellationToken token = default)
     {
         var session = ctx.GetUserSession();
-        var client = HttpClientFactory.CreateReportsClientForUser(session);
+        var client = HttpClientFactory.CreatePlatformClientForUser(session);
 
         var projectIds = new List<string>();
         if(System.Console.IsInputRedirected)
@@ -68,10 +68,10 @@ internal class Reports
         return 0;
     }
 
-    private static async Task Download(FloqReportsApiClient client, DateOnly from, DateOnly to,
+    private static async Task Download(FloqPlatformClient client, DateOnly from, DateOnly to,
         string projectId, string? outputFolder, CancellationToken token)
     {
-        await using var stream = await client.GetProjectsEmployeeHoursStream(from, to, projectId.ToUpper(), token);
+        await using var stream = await client.GetProjectEmployeeHoursCsvStream(from, to, projectId.ToUpper(), token);
 
         var defaultFileName = $"report_{projectId.ToLower()}_{from:yyyy-MM-dd}_{to:yyyy-MM-dd}.csv";
 

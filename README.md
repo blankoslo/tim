@@ -68,7 +68,7 @@ tim projects -c "Aneo Mobility"
 # Vis prosjekt-timeføring:
 tim projects -c "Aneo Mobility" --ids | tim projects time -r PreviousMonth -
 
-# Last ned CSV-rapport-filene fra Floq reports APIet som brukes som vedlegg til kundefaktura:
+# Last ned CSV-rapport-filene fra floq-platform (reports-endepunktet) som brukes som vedlegg til kundefaktura:
 tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r previousmonth -
 ```
 
