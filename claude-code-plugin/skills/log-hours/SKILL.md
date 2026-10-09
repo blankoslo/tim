@@ -67,18 +67,46 @@ tim projects -c "Client Name" --ids | tim reports project-employee-hours -r prev
 
 `tim curl` is strictly for reading and exploring data. Never use it to create, update, or delete entries. Always try native `tim` commands first — only reach for `tim curl` when no native command can get the information you need.
 
+Never call floq-db's RPC functions (`/rpc/...`) — they are being retired. Prefer a floq-platform route (`--platform`); fall back to a PostgREST table query only when no route answers the question.
+
 ```bash
-# Fetch the OpenAPI spec — use this to discover available tables, columns, and RPC functions
+# floq-platform routes (GET only) — see the table below
+tim curl --platform '/staffing/billable-customers?from=2025-11-01&to=2025-11-30'
+tim curl --platform '/reports/employee-days?employeeIds=42&from=2025-11-03&to=2025-11-07'
+
+# Fetch the PostgREST OpenAPI spec — use this to discover tables and columns
 tim curl '/'
 
-# Direct PostgREST queries (GET/read only)
+# Direct PostgREST table queries (GET/read only)
 tim curl '/employees?select=first_name,last_name'
-tim curl -x post '/rpc/employees_on_projects' --data '{"from_date":"2025-11-01","to_date":"2025-11-30"}'
 ```
 
-When the user asks for something `tim` doesn't support natively: fetch `tim curl '/'` first to explore the schema, then construct the appropriate read query. If the task requires writing data, tell the user that this operation is not supported.
+When the user asks for something `tim` doesn't support natively: check the floq-platform routes below first, then fall back to exploring the PostgREST schema with `tim curl '/'`. If the task requires writing data, tell the user that this operation is not supported.
 
-### Available tables/views
+### floq-platform routes
+
+Dates are `yyyy-MM-dd`, and `from`/`to` are both inclusive. Several ids are comma-separated (`employeeIds=7,9`). Responses are camelCase JSON.
+
+| Route | Answers |
+|-------|---------|
+| `/employees/me` | The logged-in employee, roles included |
+| `/employees?employed=true` | Everyone still employed (omit `employed` for former employees too) |
+| `/projects?active=true&customerId=ANE` | Projects, filtered |
+| `/projects/customers` | Every customer |
+| `/staffing/billable-customers?from&to` | Which customers each employee is staffed on billable work for |
+| `/staffing/days?employeeIds&from&to` | Staffing per day, with percentage |
+| `/reports/employee-days?employeeIds&from&to` | Per employee, day and code: minutes logged, % staffed, % marked off |
+| `/timesheet/hours?employeeId&from&to` | One employee's hours per date and code |
+| `/timesheet/absence?employeeIds&from&to` | Days marked off, with percentage |
+| `/timesheet/holidays` | Norwegian public holidays |
+| `/timesheet/flex-balance?employeeId&asOf` | Flexitid balance in hours, through `asOf` |
+| `/timesheet/vacation-balance?employeeId&year` | Vacation days earned, carried over, taken and left |
+| `/reports/time-tracking-status?from&to` | What each employee logged against what was available |
+| `/reports/billing-degree/achieved?from&to` | Faktureringsgrad per ISO week, per employee and company |
+| `/reports/weekly-project-hours?from&to` | Hours per project per ISO week |
+| `/reports/customer-hours?customerId&from&to` | Hours for everyone who worked on a customer's projects |
+
+### PostgREST tables/views (fallback)
 
 | Name | Description |
 |------|-------------|
@@ -99,23 +127,6 @@ When the user asks for something `tim` doesn't support natively: fetch `tim curl
 | `vacation_days_earnt` | Earned vacation days |
 | `vacation_days_spent` | Spent vacation days |
 | `write_off` | Write-off entries |
-
-### Useful RPC functions
-
-| Function | Description |
-|----------|-------------|
-| `employees_on_projects` | Employees on projects in a date range |
-| `accumulated_time_tracking` | Accumulated time tracking per employee |
-| `hours_per_employee` | Hours logged per employee |
-| `hours_per_project` | Hours logged per project |
-| `time_tracking_status` | Time tracking status per employee |
-| `time_tracking_status_by_week` | Weekly time tracking status |
-| `unregistered_days` | Days with missing time entries |
-| `get_periodic_report` | Periodic hours report |
-| `projects_info_for_employee_in_period` | Projects for an employee in a period |
-| `who_am_i` | Returns the currently authenticated employee |
-| `kpi_fg` | Billable rate KPI |
-| `staffing_and_billing_overview` | Staffing vs billing overview |
 
 ## Error handling
 

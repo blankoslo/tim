@@ -27,9 +27,9 @@ public static class Formatting
         return $"[white][[{customer.Id}]][/] {customer.Name}";
     }
 
-    public static string Format(RpcProjectsForEmployeeeForDateResponse proj)
+    public static string Format(EmployeeDay proj)
     {
-        return $"[purple]{proj.Id}[/] {proj.Project} ";
+        return $"[purple]{proj.Code}[/] {proj.Name} ";
     }
 
     public static string Format(Project proj)
@@ -48,9 +48,9 @@ public static class Formatting
         return $"[{color}]{emp.First_Name} {emp.Last_Name}[/] [[id:{emp.Id}]]";
     }
 
-    public static string FormatEmpOnProj(RpcEmployeesOnProjectsResponse emp)
+    public static string FormatEmpOnProj(BillablePlacement placement, Employee emp)
     {
-        return $"[white]{emp.Customer_Name}[/] {emp.First_Name} {emp.Last_Name} [dim][[id:{emp.Id}]][/]";
+        return $"[white]{placement.CustomerName}[/] {emp.First_Name} {emp.Last_Name} [dim][[id:{emp.Id}]][/]";
     }
 
     public static string ToNorwegianDateString(this DateOnly date)

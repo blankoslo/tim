@@ -25,7 +25,8 @@ internal partial class Time
             return;
         }
 
-        var allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, client, session);
+        var platform = HttpClientFactory.CreatePlatformClientForUser(session);
+        var allProjectsForTopMinutedCustomer = await GetProjectsForMostActiveProject(token, platform, session);
         WriteLine($"Count: {allProjectsForTopMinutedCustomer.Count()}");
         if(allProjectsForTopMinutedCustomer.Count() > 0)
         {
@@ -47,8 +48,8 @@ internal partial class Time
             var selectedProject = source[choices.IndexOf(selected)];
             var allProjects = await client.GetAllProjectsWithCustomer(token);
             var allcustomers = await client.GetCustomers(token);
-            var customer = allcustomers.First(p => p.Name == selectedProject.Customer);
-            var selectedProjectDetails = allProjects.First(p => p.Id == selectedProject.Id);
+            var customer = allcustomers.First(p => p.Id == selectedProject.CustomerId);
+            var selectedProjectDetails = allProjects.First(p => p.Id == selectedProject.Code);
             MarkupLine($"{Formatting.Format(selectedProject)}");
             await UserSecretsManager.StoreDefaultProject(
                 new UserDefaultedProject(selectedProjectDetails.Id, selectedProjectDetails.Name, customer.Name,
@@ -81,31 +82,17 @@ internal partial class Time
         }
     }
 
-    private static async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetProjectsForMostActiveProject(
-        CancellationToken token, FloqClient client,
+    private static async Task<IEnumerable<EmployeeDay>> GetProjectsForMostActiveProject(
+        CancellationToken token, FloqPlatformClient platform,
         UserSession session)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var datesLastTwoWeeks = Enumerable.Range(0, 14)
-            .Select(i => today.AddDays(-i))
-            .ToArray();
+        var recentTimeforing = await platform.GetEmployeeDays([session.EmployeeId], today.AddDays(-13), today, token);
 
-        var allTasks = new List<Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
-
-        foreach(var date in datesLastTwoWeeks)
-        {
-            var task = client.GetRpcProjectsForEmployeeForDate(session.EmployeeId, date, token);
-            allTasks.Add(task);
-        }
-
-        var projectsLastWeeks = await Task.WhenAll(allTasks);
-        if(projectsLastWeeks.Length == 0)
-        {
-            return [];
-        }
-
-        var recentTimeforing = projectsLastWeeks.SelectMany(p => p).ToList();
-        var recentTimeforingGroupedByProject = recentTimeforing.GroupBy(p => p.Id);
+        // AVS is no project and has no customer, so it cannot be a default.
+        var recentTimeforingGroupedByProject = recentTimeforing
+            .Where(p => p.CustomerId is not null)
+            .GroupBy(p => p.Code);
 
         var timeforingForTopProject = recentTimeforingGroupedByProject
             .OrderByDescending(g => g.Sum(p => p.Minutes))

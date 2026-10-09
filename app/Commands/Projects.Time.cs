@@ -41,6 +41,7 @@ internal partial class Projects
         }
 
         var client = HttpClientFactory.CreateFloqClientForUser(session);
+        var platform = HttpClientFactory.CreatePlatformClientForUser(session);
         // If no piped input, use projectId argument
         if(!projectIds.Any())
         {
@@ -84,7 +85,7 @@ internal partial class Projects
 
         foreach(var projId in projectIds)
         {
-            await ProcessProject(projId, range, dates, client, multipleProjects, token);
+            await ProcessProject(projId, range, dates, client, platform, multipleProjects, token);
         }
 
         return 0;
@@ -94,11 +95,12 @@ internal partial class Projects
         SelectedRange range,
         DateOnly[] dates,
         FloqClient client,
+        FloqPlatformClient platform,
         bool multipleProjects,
         CancellationToken ct)
     {
 
-        var report = await CreateProjectReport(projectId, range, dates, client, ct)
+        var report = await CreateProjectReport(projectId, range, dates, client, platform, ct)
             .Spinner();
 
         if(report != null && report.HasTimeEntries())
@@ -138,16 +140,14 @@ internal partial class Projects
         SelectedRange range,
         DateOnly[] dates,
         FloqClient client,
+        FloqPlatformClient platform,
         CancellationToken ct)
     {
-        // First, find all employees who have worked on projects in this date range
+        // First, find all employees who have been staffed on billable projects in this date range
         var fromDate = dates.Min();
         var toDate = dates.Max();
-        var employeesOnProjects = (await client.GetRpcEmployeesOnProjects(fromDate, toDate, ct)).ToList();
-
-        // Get unique employee IDs
-        var employeeIds = employeesOnProjects
-            .Select(e => e.Id)
+        var employeeIds = (await platform.GetBillableCustomers(fromDate, toDate, ct))
+            .Select(e => e.EmployeeId)
             .Distinct()
             .ToList();
 
@@ -156,47 +156,28 @@ internal partial class Projects
             return null;
         }
 
-        const int MaxConcurrency = 6;
-
-        using var semaphore = new SemaphoreSlim(MaxConcurrency);
-
-        var allTasks = new Dictionary<(int, DateOnly), Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>>>();
-
-        foreach (var empId in employeeIds)
-        {
-            foreach (var day in dates)
-            {
-                var t= GetWithThrottle(client, empId, day, semaphore, ct);
-                allTasks.Add((empId, day), t);
-            }
-        }
-
-        await Task.WhenAll(allTasks.Values);
+        var projectDays = (await platform.GetEmployeeDays(employeeIds, fromDate, toDate, ct))
+            .Where(e => e.Code.Equals(projectId, StringComparison.OrdinalIgnoreCase) && e.Minutes > 0 &&
+                        dates.Contains(e.Date));
 
         Dictionary<int, EmployeeInfo> employeesWithHours = new();
         Dictionary<EmployeeDay, ProjectTimeforing> timerPrAnsatt = new();
 
-        foreach(var kvp in allTasks)
+        foreach(var projectEntry in projectDays)
         {
-            var (empId, day) = kvp.Key;
-            var entries = await kvp.Value;
-            var projectEntry = entries.FirstOrDefault(e => e.Id.Equals(projectId, StringComparison.OrdinalIgnoreCase));
+            var empId = projectEntry.EmployeeId;
 
-            if(projectEntry != null && projectEntry.Minutes > 0)
+            if(!employeesWithHours.ContainsKey(empId))
             {
-                // Add employee to our list if not already there
-                if(!employeesWithHours.ContainsKey(empId))
+                var emp = await client.GetEmployee(empId, ct);
+                if(emp != null)
                 {
-                    var empOnProj = employeesOnProjects.FirstOrDefault(e => e.Id == empId);
-                    if(empOnProj != null)
-                    {
-                        employeesWithHours[empId] = new EmployeeInfo(empId, empOnProj.First_Name, empOnProj.Last_Name);
-                    }
+                    employeesWithHours[empId] = new EmployeeInfo(empId, emp.First_Name, emp.Last_Name);
                 }
-
-                timerPrAnsatt[new EmployeeDay(empId, day)] =
-                    new ProjectTimeforing(day, projectEntry.Minutes, projectEntry.Percentage_Staffed);
             }
+
+            timerPrAnsatt[new EmployeeDay(empId, projectEntry.Date)] =
+                new ProjectTimeforing(projectEntry.Date, projectEntry.Minutes, projectEntry.StaffedPercentage);
         }
 
         if(!employeesWithHours.Any())
@@ -222,24 +203,6 @@ internal partial class Projects
             dates,
             employeesWithHours.Values.OrderBy(e => e.LastName).ThenBy(e => e.FirstName).ToList(),
             timerPrAnsatt);
-    }
-
-    private static async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetWithThrottle(
-        FloqClient client,
-        int empId,
-        DateOnly day,
-        SemaphoreSlim semaphore,
-        CancellationToken ct)
-    {
-        await semaphore.WaitAsync(ct);
-        try
-        {
-            return await client.GetRpcProjectsForEmployeeForDate(empId, day, ct);
-        }
-        finally
-        {
-            semaphore.Release();
-        }
     }
 
     private static void RenderProjectTable(Table table, ProjectTimeReport report)

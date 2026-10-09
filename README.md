@@ -83,15 +83,17 @@ tim projects -c "Aneo Mobility" --ids | tim reports project-employee-hours -r pr
 
 # tim curl
 
-`tim curl` gjør requests rett mot PostgREST APIet med innloggede credentials.
+`tim curl` gjør requests rett mot PostgREST APIet med innloggede credentials. Med `--platform` (`-p`) går de mot floq-platform (`https://api.platform.floq.no`) i stedet.
+
+floq-dbs RPC-funksjoner (`/rpc/...`) er på vei ut. Bruk ruten i floq-platform som erstatter dem.
 
 ```bash
 # Hva er det dissa folka driver med egentlig?
 tim curl '/employees?select=first_name,last_name&role=eq.Annet&termination_date=is.null'
 
-# -x POST for å kalle RPC-metoder:
-$ tim curl -x post '/rpc/employees_on_projects' \
- --data '{ "from_date": "2025-11-01", "to_date":"2025-11-30"}' | grep "Ruter"
+# Hvem var ute hos Ruter i november?
+tim curl --platform '/staffing/billable-customers?from=2025-11-01&to=2025-11-30' \
+ | jq '.[] | select(.customerName == "Ruter")'
 
 # Finne timeføringa til alle Mags
 tim curl '/employees?select=id&first_name=like.*Mag*'  | jq -r '.[].id' | tim ls -

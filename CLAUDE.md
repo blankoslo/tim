@@ -55,7 +55,7 @@ The homebrew deploys are dependent on github release assets (tar/zips in the rel
 
 - `app/Program.cs` — entry point; sets Norwegian locale and starts ConsoleAppFramework
 - `app/Commands/` — one class per command group, subcommands as separate files (e.g. `Time.cs`, `Time.List.cs`, `Time.Write.cs`)
-- `app/Helpers/Floq/` — HTTP clients for Floq/PostgREST API (`FloqClient.cs` for the PostgREST API, `FloqPlatformClient.cs` for floq-platform)
+- `app/Helpers/Floq/` — HTTP clients for Floq/PostgREST API (`FloqClient.cs`) and floq-platform (`FloqPlatformClient.cs`)
 - `app/Helpers/Auth/` — JWT session management via .NET user secrets (`UserSecretsId: tim-1337`)
 - `app/GlobalUsings.cs` — shared usings across the project
 
@@ -74,6 +74,8 @@ Add new command files to `app/Commands/`. For subcommands, create a parent class
 ### External API
 
 Floq is a PostgREST API. Use `tim curl '<path>'` to make authenticated raw requests. Swagger spec is at `https://api-prod.floq.no/`.
+
+Reads that used floq-db's RPC functions go to floq-platform (`https://api.platform.floq.no`, same OIDC token) instead: `/reports/employee-days`, `/staffing/billable-customers` and `/timesheet/hours`. Don't add new `/rpc/...` calls; add a platform route instead.
 
 Framework docs:
 - ConsoleAppFramework: https://raw.githubusercontent.com/Cysharp/ConsoleAppFramework/refs/heads/master/ReadMe.md

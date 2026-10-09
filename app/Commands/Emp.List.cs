@@ -36,43 +36,30 @@ internal partial class Emp
             var allEmployees = (await client.GetEmployees(token)).ToList();
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var from = today.AddDays(-20);
-            var atClients = await client.GetRpcEmployeesOnProjects(from, today, token);
+            var platform = HttpClientFactory.CreatePlatformClientForUser(session);
+            var atClients = await platform.GetBillableCustomers(from, today, token);
             var empsAtCustomers = atClients
-                .Where(c => c.Customer_Name == customer)
-                .OrderBy(e => e.Id)
-                .GroupBy(e => e.Customer_Id);
+                .Where(c => c.CustomerName == customer)
+                .OrderBy(e => e.EmployeeId)
+                .GroupBy(e => e.CustomerId);
 
             foreach(var empsAtCustomer in empsAtCustomers)
             {
-                foreach(var emp in empsAtCustomer.ToList())
+                foreach(var placement in empsAtCustomer.ToList())
                 {
-                    if(includeInactive)
+                    var emp = allEmployees.FirstOrDefault(e => e.Id == placement.EmployeeId);
+                    if(emp == null || (!includeInactive && !emp.ActivelyEmployeed()))
                     {
-                        if(ids)
-                        {
-                            Console.WriteLine(emp.Id);
-                        }
-                        else
-                        {
-                            Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
-                        }
+                        continue;
+                    }
+
+                    if(ids)
+                    {
+                        Console.WriteLine(emp.Id);
                     }
                     else
                     {
-                        var allDetails = allEmployees.FirstOrDefault(e => e.ActivelyEmployeed() && e.Id == emp.Id);
-                        if(allDetails == null)
-                        {
-                            continue;
-                        }
-
-                        if(ids)
-                        {
-                            Console.WriteLine(emp.Id);
-                        }
-                        else
-                        {
-                            Console.MarkupLine($"{Formatting.FormatEmpOnProj(emp)}");
-                        }
+                        Console.MarkupLine($"{Formatting.FormatEmpOnProj(placement, emp)}");
                     }
                 }
             }
