@@ -33,6 +33,15 @@ public class FloqPlatformClient(HttpClient client)
         return res ?? new TimesheetPage([]);
     }
 
+    // Replaces reports-api's /project_employee_hours. Raw CSV, one column per day of the range.
+    public async Task<Stream> GetProjectEmployeeHoursCsvStream(DateOnly from, DateOnly to, string projectId,
+        CancellationToken token)
+    {
+        return await client.GetStreamAsync(
+            $"/reports/project-employee-hours.csv?projectId={Uri.EscapeDataString(projectId)}&from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}",
+            token);
+    }
+
     public Task<HttpResponseMessage> SendAsync(HttpRequestMessage msg, CancellationToken token)
     {
         return client.SendAsync(msg, token);
