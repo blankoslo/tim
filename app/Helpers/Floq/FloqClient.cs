@@ -120,10 +120,10 @@ public record Customer(string Id, string Name);
 
 public record Employee(
     int Id,
-    string Email,
-    string Title,
-    DateOnly Date_Of_Employment,
-    bool Has_Permanent_Position,
+    string? Email,
+    string? Title,
+    DateOnly? Date_Of_Employment,
+    bool? Has_Permanent_Position,
     DateOnly? Termination_Date,
     string First_Name,
     string Last_Name,
