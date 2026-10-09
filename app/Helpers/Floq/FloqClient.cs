@@ -36,38 +36,6 @@ public class FloqClient(HttpClient client)
         return res?.FirstOrDefault();
     }
 
-    // RPC: projects_for_employee_for_date
-    // Denne funksjonen returnerer prosjekter fordi noe/noen sørger for at
-    // prosjekter finnes for ansatt & dato (med null|0-verdier).
-    public async Task<IEnumerable<RpcProjectsForEmployeeeForDateResponse>> GetRpcProjectsForEmployeeForDate(
-        int employeeId, DateOnly date, CancellationToken token)
-    {
-        var reqPayload = new RpcProjectsForEmployeeeForDateRequest(employeeId, date.ToString("yyyy-MM-dd"));
-        var res = await client.PostAsJsonAsync("/rpc/projects_for_employee_for_date", reqPayload,
-            FloqJsonSerializerContext.Default.RpcProjectsForEmployeeeForDateRequest, token);
-        if(res.IsSuccessStatusCode)
-        {
-            return await res.Content.ReadFromJsonAsync(FloqJsonSerializerContext.Default.IEnumerableRpcProjectsForEmployeeeForDateResponse,token) ??
-                   [];
-        }
-
-        return [];
-    }
-
-    public async Task<IEnumerable<RpcEmployeesOnProjectsResponse>> GetRpcEmployeesOnProjects(DateOnly fromDate,
-        DateOnly toDate, CancellationToken token)
-    {
-        var reqPayload = new RpcEmployeesOnProjectsRequest(fromDate, toDate);
-        var res = await client.PostAsJsonAsync("/rpc/employees_on_projects", reqPayload, FloqJsonSerializerContext.Default.RpcEmployeesOnProjectsRequest,
-            token);
-        if(res.IsSuccessStatusCode)
-        {
-            return await res.Content.ReadFromJsonAsync(FloqJsonSerializerContext.Default.IEnumerableRpcEmployeesOnProjectsResponse, token) ?? [];
-        }
-
-        return [];
-    }
-
     public async Task<bool> AddTimeEntry(TimeEntryRequest request, CancellationToken token)
     {
         var res = await client.PostAsJsonAsync("/time_entry", request, FloqJsonSerializerContext.Default.TimeEntryRequest, token);
@@ -149,27 +117,6 @@ public record Project(
     bool Deductable);
 
 public record Customer(string Id, string Name);
-
-public record RpcProjectsForEmployeeeForDateRequest(int employee_id, string date);
-
-public record RpcEmployeesOnProjectsRequest(DateOnly from_date, DateOnly to_date);
-
-// Customer: CustonerName, ikke CustomerId
-// "Aneo Mobility", ikke "ANE"
-public record RpcProjectsForEmployeeeForDateResponse(
-    string Id,
-    string Project,
-    string Customer,
-    int Minutes,
-    int Percentage_Staffed);
-
-public record RpcEmployeesOnProjectsResponse(
-    string Customer_Id,
-    string Customer_Name,
-    string First_Name,
-    string Last_Name,
-    int Id,
-    string Emoji);
 
 public record Employee(
     int Id,
@@ -286,8 +233,6 @@ public record PaidOvertimeResponse(
 )]
 [JsonSerializable(typeof(IEnumerable<Employee>))]
 [JsonSerializable(typeof(Employee))]
-[JsonSerializable(typeof(IEnumerable<RpcProjectsForEmployeeeForDateResponse>))]
-[JsonSerializable(typeof(IEnumerable<RpcEmployeesOnProjectsResponse>))]
 [JsonSerializable(typeof(IEnumerable<GetAllProjectsIncludeCustomer>))]
 [JsonSerializable(typeof(IEnumerable<Project>))]
 [JsonSerializable(typeof(IEnumerable<Customer>))]
@@ -298,11 +243,7 @@ public record PaidOvertimeResponse(
 [JsonSerializable(typeof(GetAllProjectsIncludeCustomer))]
 [JsonSerializable(typeof(Project))]
 [JsonSerializable(typeof(Customer))]
-[JsonSerializable(typeof(RpcProjectsForEmployeeeForDateResponse))]
-[JsonSerializable(typeof(RpcEmployeesOnProjectsResponse))]
 [JsonSerializable(typeof(PaidOvertimeResponse))]
-[JsonSerializable(typeof(RpcProjectsForEmployeeeForDateRequest))]
-[JsonSerializable(typeof(RpcEmployeesOnProjectsRequest))]
 internal partial class FloqJsonSerializerContext : JsonSerializerContext
 {
 }
