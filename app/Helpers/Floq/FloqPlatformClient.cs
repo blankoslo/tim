@@ -49,6 +49,8 @@ public class FloqPlatformClient(HttpClient client)
 }
 
 // CustomerId/CustomerName are null for AVS, which is no project.
+// The OpenAPI schema has staffedPercentage as a double (e.g. 87.5) and the staffing model is moving from per day to
+// per week, so both percentages are double? to tolerate fractions and null.
 public record EmployeeDay(
     int EmployeeId,
     DateOnly Date,
@@ -57,8 +59,8 @@ public record EmployeeDay(
     string? CustomerId,
     string? CustomerName,
     int Minutes,
-    int StaffedPercentage,
-    int AbsencePercentage);
+    double? StaffedPercentage,
+    double? AbsencePercentage);
 
 public record BillablePlacement(int EmployeeId, string CustomerId, string? CustomerName);
 

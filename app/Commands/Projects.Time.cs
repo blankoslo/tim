@@ -177,7 +177,7 @@ internal partial class Projects
             }
 
             timerPrAnsatt[new EmployeeDay(empId, projectEntry.Date)] =
-                new ProjectTimeforing(projectEntry.Date, projectEntry.Minutes, projectEntry.StaffedPercentage);
+                new ProjectTimeforing(projectEntry.Date, projectEntry.Minutes, projectEntry.StaffedPercentage ?? 0);
         }
 
         if(!employeesWithHours.Any())
@@ -415,5 +415,5 @@ internal partial class Projects
 
     private record EmployeeDay(int EmployeeId, DateOnly Day);
 
-    private record ProjectTimeforing(DateOnly Day, int Minutes, int PercentageStaffed);
+    private record ProjectTimeforing(DateOnly Day, int Minutes, double PercentageStaffed);
 }

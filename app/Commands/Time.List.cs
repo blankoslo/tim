@@ -181,7 +181,7 @@ internal partial class Time
                 timerPrProsjekt.Add(new ProjectDay(project.Id, day),
                     projectEntriesOnDay is not null
                         ? new Timeforing(day, projectEntriesOnDay.Minutes,
-                            projectEntriesOnDay.StaffedPercentage + projectEntriesOnDay.AbsencePercentage)
+                            (projectEntriesOnDay.StaffedPercentage ?? 0) + (projectEntriesOnDay.AbsencePercentage ?? 0))
                         : new Timeforing(day, 0, 0));
             }
         }
@@ -224,7 +224,7 @@ internal partial class Time
         }
     }
 
-    private record Timeforing(DateOnly Day, int Minutes, int PercentageStaffed);
+    private record Timeforing(DateOnly Day, int Minutes, double PercentageStaffed);
 
     private record Project(string Id, string Name);
 
